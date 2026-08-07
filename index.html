@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suporte PCR</title>
+</head>
+<body>
+
+    <!-- CABEÇALHO -->
+    <header>
+        <h1>Apoio à Parada Cardiorrespiratória</h1>
+    </header>
+
+    <main>
+        <!-- TELA 1: SETUP INICIAL -->
+        <section id="tela-setup">
+            <h2>Configuração Inicial</h2>
+            <form>
+                <fieldset>
+                    <legend>Perfil do Paciente</legend>
+                    
+                    <input type="radio" id="adulto" name="perfil-paciente" value="adulto" checked>
+                    <label for="adulto">Adulto</label>
+
+                    <input type="radio" id="pediatrico" name="perfil-paciente" value="pediatrico">
+                    <label for="pediatrico">Criança</label>
+
+                    <input type="radio" id="neonato" name="perfil-paciente" value="neonato">
+                    <label for="neonato">Bebê / Neonato</label>
+                </fieldset>
+
+                <button type="button" id="btn-iniciar">Iniciar Atendimento</button>
+            </form>
+        </section>
+
+        <!-- TELA 2: ATENDIMENTO EM TEMPO REAL -->
+        <section id="tela-atendimento">
+            <h2>Atendimento em Andamento</h2>
+
+            <!-- Cronômetro Central e Metrônomo -->
+            <article id="painel-tempo">
+                <h3>Tempo Total</h3>
+                <time id="cronometro-geral">00:00</time>
+                <p>Status do Metrônomo: <span id="status-metronomo">Pausado</span></p>
+            </article>
+
+            <!-- Ações e Medicamentos -->
+            <article id="painel-acoes">
+                <h3>Intervenções Rápidas</h3>
+                
+                <button type="button" id="btn-choque">Registrar Choque (0)</button>
+                <button type="button" id="btn-adrenalina">Adrenalina (0)</button>
+                <button type="button" id="btn-amiodarona">Amiodarona (0)</button>
+                <button type="button" id="btn-checar-pulso">Checar Pulso / Ritmo</button>
+                <button type="button" id="btn-rosc">ROSC (Retorno da Circulação Spontânea)</button>
+            </article>
+
+            <!-- Linha do Tempo / Registro ao Vivo -->
+            <article id="painel-registro">
+                <h3>Linha do Tempo de Eventos</h3>
+                <ul id="lista-eventos">
+                    <!-- Eventos serão inseridos dinamicamente via JS futuramente -->
+                </ul>
+            </article>
+        </section>
+
+        <!-- TELA 3: RESUMO E FECHAMENTO -->
+        <section id="tela-resumo">
+            <h2>Resumo do Atendimento</h2>
+            
+            <article id="relatorio-final">
+                <h3>Relatório do Evento</h3>
+                <textarea id="texto-evoluçao" readonly placeholder="O relatório será gerado automaticamente aqui..."></textarea>
+                <button type="button" id="btn-copiar">Copiar para Prontuário</button>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        <p>Desenvolvido para apoio à equipe de enfermagem e saúde.</p>
+    </footer>
+
+</body>
+</html>
