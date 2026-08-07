@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suporte PCR</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- CABEÇALHO -->
     <header>
         <h1>Apoio à Parada Cardiorrespiratória</h1>
     </header>
@@ -18,49 +18,83 @@
             <h2>Configuração Inicial</h2>
             <form>
                 <fieldset>
-                    <legend>Perfil do Paciente</legend>
+                    <legend>Selecione o Perfil do Paciente</legend>
                     
-                    <input type="radio" id="adulto" name="perfil-paciente" value="adulto" checked>
-                    <label for="adulto">Adulto</label>
+                    <div class="grid-perfis">
+                        <label class="card-perfil">
+                            <input type="radio" name="perfil-paciente" value="adulto" checked>
+                            <span class="icone-perfil">🧍</span> <!-- Ou <img src="adulto.png" alt="Adulto"> -->
+                            <span class="titulo-perfil">Adulto</span>
+                            <small>30:2</small>
+                        </label>
 
-                    <input type="radio" id="pediatrico" name="perfil-paciente" value="pediatrico">
-                    <label for="pediatrico">Criança</label>
+                        <label class="card-perfil">
+                            <input type="radio" name="perfil-paciente" value="pediatrico">
+                            <span class="icone-perfil">🧒</span> <!-- Ou <img src="crianca.png" alt="Criança"> -->
+                            <span class="titulo-perfil">Pediátrico</span>
+                            <small>15:2</small>
+                        </label>
 
-                    <input type="radio" id="neonato" name="perfil-paciente" value="neonato">
-                    <label for="neonato">Bebê / Neonato</label>
+                        <label class="card-perfil">
+                            <input type="radio" name="perfil-paciente" value="neonato">
+                            <span class="icone-perfil">👶</span> <!-- Ou <img src="neonato.png" alt="Neonato"> -->
+                            <span class="titulo-perfil">Neonato</span>
+                            <small>3:1</small>
+                        </label>
+                    </div>
                 </fieldset>
 
-                <button type="button" id="btn-iniciar">Iniciar Atendimento</button>
+                <button type="button" id="btn-iniciar">INICIAR ATENDIMENTO</button>
             </form>
         </section>
-
+        
         <!-- TELA 2: ATENDIMENTO EM TEMPO REAL -->
         <section id="tela-atendimento">
-            <h2>Atendimento em Andamento</h2>
+            <header class="barra-status">
+                <time id="relogio-agora">00:00:00</time>
+                <span class="badge-status">PCR EM ANDAMENTO</span>
+                <button type="button" id="btn-audio-geral" title="Mutar/Desmutar Áudio Geral">🔊</button>
+            </header>
 
-            <!-- Cronômetro Central e Metrônomo -->
+            <!-- Cronômetro Central e Bip -->
             <article id="painel-tempo">
-                <h3>Tempo Total</h3>
-                <time id="cronometro-geral">00:00</time>
-                <p>Status do Metrônomo: <span id="status-metronomo">Pausado</span></p>
-            </article>
-
-            <!-- Ações e Medicamentos -->
-            <article id="painel-acoes">
-                <h3>Intervenções Rápidas</h3>
+                <h3>TEMPO DE MANOBRAS</h3>
+                <time id="cronometro-geral">00:00:00</time>
                 
-                <button type="button" id="btn-choque">Registrar Choque (0)</button>
-                <button type="button" id="btn-adrenalina">Adrenalina (0)</button>
-                <button type="button" id="btn-amiodarona">Amiodarona (0)</button>
-                <button type="button" id="btn-checar-pulso">Checar Pulso / Ritmo</button>
-                <button type="button" id="btn-rosc">ROSC (Retorno da Circulação Spontânea)</button>
+                <div class="controles-bip">
+                    <span>❤️ 100–120/min</span>
+                    <button type="button" id="btn-toggle-bip">🔔 BIP ATIVO</button>
+                </div>
             </article>
 
-            <!-- Linha do Tempo / Registro ao Vivo -->
+            <!-- Ações de Suporte (Vias Aéreas e Dispositivos) -->
+            <article id="painel-suporte">
+                <h3>SUPORTE & DISPOSITIVOS</h3>
+                <div class="grid-botoes">
+                    <button type="button" id="btn-dea" class="btn-suporte">⚡ DEA</button>
+                    <button type="button" id="btn-desfibrilador" class="btn-suporte">⚡ Desfibrilador Manual</button>
+                    <button type="button" id="btn-acesso" class="btn-suporte">💉 Acesso EV/IO</button>
+                    <button type="button" id="btn-ventilacao" class="btn-suporte btn-ativo">🫁 Ambu / Máscara</button>
+                    <button type="button" id="btn-intubacao" class="btn-suporte">🩺 Via Aérea Avançada (IOT)</button>
+                </div>
+            </article>
+
+            <!-- Intervenções com Contadores de Medicação e Choques -->
+            <article id="painel-intervencoes">
+                <h3>INTERVENÇÕES RÁPIDAS</h3>
+                <div class="grid-botoes">
+                    <button type="button" id="btn-choque" class="btn-intervencao">⚡ Choque (0)</button>
+                    <button type="button" id="btn-adrenalina" class="btn-intervencao">💉 Adrenalina (0)</button>
+                    <button type="button" id="btn-amiodarona" class="btn-intervencao">💊 Amiodarona (0)</button>
+                    <button type="button" id="btn-rosc" class="btn-intervencao btn-destaque">🟢 RCE (Retorno)</button>
+                </div>
+            </article>
+
+            <!-- Linha do Tempo de Registros -->
             <article id="painel-registro">
                 <h3>Linha do Tempo de Eventos</h3>
                 <ul id="lista-eventos">
-                    <!-- Eventos serão inseridos dinamicamente via JS futuramente -->
+                    <!-- Registros serão inseridos via JavaScript -->
                 </ul>
             </article>
         </section>
@@ -71,7 +105,7 @@
             
             <article id="relatorio-final">
                 <h3>Relatório do Evento</h3>
-                <textarea id="texto-evoluçao" readonly placeholder="O relatório será gerado automaticamente aqui..."></textarea>
+                <textarea id="texto-evolucao" readonly placeholder="O relatório será gerado automaticamente aqui..."></textarea>
                 <button type="button" id="btn-copiar">Copiar para Prontuário</button>
             </article>
         </section>
