@@ -9,9 +9,9 @@ let tempoSegundos = 0;
 let bipAtivo = true;
 let somMasterAtivo = true;
 
-// Estado dos Equipamentos Conectados
-let deaConectado = false;
-let monitorConectado = false;
+let timerAdrenalinaLembrete = null;
+let timerAmiodaronaLembrete = null;
+let wakeLock = null;
 
 let contadores = {
     Choque: 0,
@@ -21,14 +21,26 @@ let contadores = {
 
 let eventosLinhaTempo = [];
 
-// SINTETIZADOR DE VOZ
+// MANTER TELA ACESA (Screen Wake Lock API)
+async function manterTelaAcesa() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+        }
+    } catch (err) {
+        console.log(`Wake Lock Error: ${err.message}`);
+    }
+}
+
+// SINTETIZADOR DE VOZ (Volume máximo e prioridade)
 function falar(texto) {
     if (!somMasterAtivo) return;
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancela falas em andamento
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'pt-BR';
-        utterance.rate = 1.1; // Velocidade ligeiramente rápida para emergência
+        utterance.rate = 1.1;
+        utterance.volume = 1.0; // Volume Máximo
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -36,13 +48,16 @@ function falar(texto) {
 // INICIALIZAÇÃO
 document.addEventListener('DOMContentLoaded', () => {
     iniciarRelogioHoraReal();
-
-    document.getElementById('btn-iniciar-atendimento').addEventListener('click', iniciarPCR);
     document.getElementById('btn-toggle-bip').addEventListener('click', toggleBip);
     document.getElementById('btn-som-master').addEventListener('click', toggleSomMaster);
 });
 
-// RELÓGIO TOPO
+function selecionarPerfil(elemento, perfil) {
+    document.querySelectorAll('.card-perfil').forEach(c => c.classList.remove('selecionado'));
+    elemento.classList.add('selecionado');
+    perfilSelecionado = perfil;
+}
+
 function iniciarRelogioHoraReal() {
     setInterval(() => {
         const agora = new Date();
@@ -50,23 +65,18 @@ function iniciarRelogioHoraReal() {
     }, 1000);
 }
 
-// FORMATADORES DE TEMPO
 function formatarTempo(segundosTotais) {
     const hrs = Math.floor(segundosTotais / 3600).toString().padStart(2, '0');
     const mins = Math.floor((segundosTotais % 3600) / 60).toString().padStart(2, '0');
     const segs = (segundosTotais % 60).toString().padStart(2, '0');
-    
-    // Retorna HH:MM:SS se durar mais de 1 hora, ou MM:SS para atendimentos normais
     return hrs > 0 ? `${hrs}:${mins}:${segs}` : `${mins}:${segs}`;
 }
 
 function obterHoraAtual() {
     const agora = new Date();
-    // Retorna no formato HH:MM (ex: 12:01)
     return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
-// CONTROLADOR DE NAVEGAÇÃO
 function alternarTela(idTela) {
     document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
     document.getElementById(idTela).classList.add('ativa');
@@ -74,78 +84,47 @@ function alternarTela(idTela) {
 
 // INICIAR ATENDIMENTO
 function iniciarPCR() {
-    const radioPerfil = document.querySelector('input[name="perfil-paciente"]:checked');
-    if (radioPerfil) perfilSelecionado = radioPerfil.value;
-
+    manterTelaAcesa();
     tempoInicio = new Date();
     tempoSegundos = 0;
     eventosLinhaTempo = [];
-    deaConectado = false;
-    monitorConectado = false;
     contadores = { Choque: 0, Adrenalina: 0, Amiodarona: 0 };
     atualizarContadoresUI();
 
     alternarTela('tela-atendimento');
-    
-    // Comando vocal inicial
-    falar("Iniciar compressão");
+    falar("Iniciar compressões");
 
-    // Evento Inicial na Linha do Tempo
     registrarEvento(`Atendimento iniciado (${perfilSelecionado})`);
 
-    // Cronômetro Principal
+    iniciarCronometro();
+    iniciarMetronomo();
+}
+
+function iniciarCronometro() {
+    if (timerGeral) clearInterval(timerGeral);
     timerGeral = setInterval(() => {
         tempoSegundos++;
         document.getElementById('cronometro-geral').textContent = formatarTempo(tempoSegundos);
 
-        // ALERTA DE CICLO DE 2 MINUTOS (120 SEGUNDOS)
+        // Alerta de Ciclo de 2 Minutos
         if (tempoSegundos > 0 && tempoSegundos % 120 === 0) {
-            dispararAlertaDoisMinutos();
+            falar("Atenção: dois minutos decorridos. Checar ritmo e pulso.");
         }
     }, 1000);
-
-    iniciarMetronomo();
 }
 
-// ALERTA VOCAL DE 2 MINUTOS
-function dispararAlertaDoisMinutos() {
-    let mensagemAlerta = "Atenção: dois minutos decorridos. Trocar socorrista. ";
-
-    if (monitorConectado) {
-        mensagemAlerta += "Reavaliar ritmo no monitor e checar pulso.";
-    } else if (deaConectado) {
-        mensagemAlerta += "Reavaliar ritmo no DEA.";
-    } else {
-        mensagemAlerta += "Reavaliar paciente.";
-    }
-
-    falar(mensagemAlerta);
-    registrarEvento(`⚠️ Ciclo 2 min concluído - Troca de socorrista`);
-}
-
-// METRÔNOMO (BIP + LUZ)
 function iniciarMetronomo() {
     if (timerBipRitmo) clearInterval(timerBipRitmo);
-    
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Intervalo de ~110 BPM (545ms)
-    timerBipRitmo = setInterval(() => {
-        // Flash na Luz Central
-        const luz = document.getElementById('luz-ritmo');
-        if (luz) {
-            luz.classList.add('piscando');
-            setTimeout(() => luz.classList.remove('piscando'), 120);
-        }
 
-        // Bip Sonoro
+    timerBipRitmo = setInterval(() => {
         if (bipAtivo && somMasterAtivo) {
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
@@ -157,8 +136,7 @@ function iniciarMetronomo() {
 
 function toggleBip() {
     bipAtivo = !bipAtivo;
-    const btn = document.getElementById('btn-toggle-bip');
-    btn.textContent = bipAtivo ? "🔔 Bip LIGADO" : "🔕 Bip DESLIGADO";
+    document.getElementById('btn-toggle-bip').textContent = bipAtivo ? "🔔 Bip LIGADO" : "🔕 Bip DESLIGADO";
 }
 
 function toggleSomMaster() {
@@ -166,7 +144,7 @@ function toggleSomMaster() {
     document.getElementById('btn-som-master').textContent = somMasterAtivo ? "🔊" : "🔇";
 }
 
-// AÇÃO DE VENTILAÇÃO DIFERENCIADA POR PERFIL
+// ACOES MEDICAMENTOSAS E VIA AÉREA
 function acaoVentilacao() {
     if (perfilSelecionado === 'CRIANCA' || perfilSelecionado === 'BEBE') {
         falar("Iniciar 15 por 2");
@@ -177,14 +155,46 @@ function acaoVentilacao() {
     }
 }
 
-// REGISTRO DE EVENTOS E SUPORTE
+function registrarIntubacao() {
+    falar("Via aérea avançada estabelecida. Manter ventilação contínua 1 a cada 6 segundos.");
+    registrarEvento("Via aérea avançada / Intubação");
+}
+
+function registrarAdrenalina() {
+    contadores.Adrenalina++;
+    atualizarContadoresUI();
+    registrarEvento(`Adrenalina (${contadores.Adrenalina}ª dose)`);
+
+    // Alerta de retorno da Adrenalina em 3 min
+    if (timerAdrenalinaLembrete) clearTimeout(timerAdrenalinaLembrete);
+    timerAdrenalinaLembrete = setTimeout(() => {
+        falar("Atenção: 3 minutos da última Adrenalina.");
+    }, 180000); // 3 minutos
+}
+
+function registrarAmiodarona() {
+    contadores.Amiodarona++;
+    atualizarContadoresUI();
+    
+    if (contadores.Amiodarona === 1) {
+        registrarEvento("Amiodarona (1ª dose - 300mg)");
+        if (timerAmiodaronaLembrete) clearTimeout(timerAmiodaronaLembrete);
+        timerAmiodaronaLembrete = setTimeout(() => {
+            falar("Atenção: Avaliar segunda dose de Amiodarona 150 miligramas se necessário.");
+        }, 180000);
+    } else {
+        registrarEvento(`Amiodarona (${contadores.Amiodarona}ª dose - 150mg)`);
+    }
+}
+
+function registrarRCE() {
+    clearInterval(timerGeral);
+    if (timerBipRitmo) clearInterval(timerBipRitmo);
+    falar("Retorno da circulação espontânea registrado. Cronômetro pausado.");
+    registrarEvento("RCE — Retorno da circulação espontânea");
+}
+
 function registrarAcao(descricao) {
-    if (descricao.includes('DEA')) {
-        deaConectado = true;
-    }
-    if (descricao.includes('Monitor')) {
-        monitorConectado = true;
-    }
     registrarEvento(descricao);
 }
 
@@ -203,72 +213,55 @@ function atualizarContadoresUI() {
 function registrarEvento(descricao) {
     const hora = obterHoraAtual();
     const tempoDecorrito = formatarTempo(tempoSegundos);
-    
-    const evento = {
-        hora: hora,
-        tempoParada: tempoDecorrito,
-        descricao: descricao
-    };
-
-    eventosLinhaTempo.push(evento);
+    eventosLinhaTempo.push({ hora, tempoParada: tempoDecorrito, descricao });
     atualizarLinhaTempoUI();
 }
 
-// ATUALIZA A LINHA DO TEMPO EM TEMPO REAL (• HH:MM - Evento - MM:SS)
 function atualizarLinhaTempoUI() {
     const feed = document.getElementById('feed-linha-tempo');
     feed.innerHTML = '';
-
     [...eventosLinhaTempo].reverse().forEach(ev => {
         const li = document.createElement('li');
-        li.innerHTML = `
-            <span>
-                <span class="ponto-bullet">•</span> 
-                <span class="hora-feed">${ev.hora}</span> - 
-                <strong class="texto-evento">${ev.descricao}</strong> - 
-                <span class="tempo-decorrido">${ev.tempoParada}</span>
-            </span>
-        `;
+        li.innerHTML = `<span class="ponto-bullet">•</span> <span class="hora-feed">${ev.hora}</span> - <strong>${ev.descricao}</strong> - <span class="tempo-decorrido">${ev.tempoParada}</span>`;
         feed.appendChild(li);
     });
 }
 
-// FINALIZAÇÃO
+function reiniciarPCR() {
+    if (confirm("Paciente apresentou nova parada? O cronômetro será zerado para iniciar um novo evento.")) {
+        tempoSegundos = 0;
+        if (timerAdrenalinaLembrete) clearTimeout(timerAdrenalinaLembrete);
+        if (timerAmiodaronaLembrete) clearTimeout(timerAmiodaronaLembrete);
+        
+        registrarEvento("Nova PCR identificada — Reinício de manobras");
+        falar("Nova PCR identificada. Reiniciando compressões.");
+        iniciarCronometro();
+        iniciarMetronomo();
+    }
+}
+
 function finalizarAtendimento(status) {
     tempoTermino = new Date();
     clearInterval(timerGeral);
     if (timerBipRitmo) clearInterval(timerBipRitmo);
+    if (wakeLock) wakeLock.release();
 
     registrarEvento(`Atendimento finalizado: ${status}`);
 
-    document.getElementById('resumo-status').textContent = `Finalizado com ${status}`;
+    document.getElementById('resumo-status').textContent = `Status: ${status}`;
     document.getElementById('resumo-inicio').textContent = tempoInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('resumo-termino').textContent = tempoTermino.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('resumo-duracao').textContent = formatarTempo(tempoSegundos);
 
     const feedResumo = document.getElementById('feed-resumo-completo');
     feedResumo.innerHTML = '';
-    
     eventosLinhaTempo.forEach(ev => {
         const li = document.createElement('li');
-        li.innerHTML = `
-            <span>
-                <span class="ponto-bullet">•</span> 
-                <span class="hora-feed">${ev.hora}</span> - 
-                <strong>${ev.descricao}</strong> - 
-                <span class="tempo-decorrido">${ev.tempoParada}</span>
-            </span>
-        `;
+        li.innerHTML = `<span class="ponto-bullet">•</span> <span class="hora-feed">${ev.hora}</span> - <strong>${ev.descricao}</strong> - <span class="tempo-decorrido">${ev.tempoParada}</span>`;
         feedResumo.appendChild(li);
     });
 
     alternarTela('tela-resumo');
-}
-
-function reiniciarPCR() {
-    if (confirm("Deseja reiniciar a PCR? O histórico atual será zerado.")) {
-        iniciarPCR();
-    }
 }
 
 function novoAtendimento() {
@@ -277,33 +270,27 @@ function novoAtendimento() {
     alternarTela('tela-setup');
 }
 
-// AÇÕES DA TELA DE RESUMO
 function gerarTextoResumo() {
-    let texto = `=== RESUMO DE ATENDIMENTO PCR ===\n`;
+    let texto = `=== RELATÓRIO DE ATENDIMENTO PCR ===\n`;
     texto += `Perfil: ${perfilSelecionado}\n`;
     texto += `Início: ${tempoInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`;
     texto += `Término: ${tempoTermino.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`;
     texto += `Duração Total: ${formatarTempo(tempoSegundos)}\n\n`;
     texto += `--- LINHA DO TEMPO ---\n`;
-
     eventosLinhaTempo.forEach(ev => {
         texto += `• ${ev.hora} - ${ev.descricao} - ${ev.tempoParada}\n`;
     });
-
     return texto;
 }
 
 function copiarResumo() {
-    const texto = gerarTextoResumo();
-    navigator.clipboard.writeText(texto).then(() => {
+    navigator.clipboard.writeText(gerarTextoResumo()).then(() => {
         alert("Resumo copiado para a área de transferência!");
     });
 }
 
 function enviarEmail() {
     const texto = gerarTextoResumo();
-    const assunto = encodeURIComponent(`Relatório de PCR - ${perfilSelecionado} (${tempoInicio.toLocaleDateString('pt-BR')})`);
-    const corpo = encodeURIComponent(texto);
-    
-    window.location.href = `mailto:?subject=${assunto}&body=${corpo}`;
+    const assunto = encodeURIComponent(`Relatório de PCR - ${perfilSelecionado}`);
+    window.location.href = `mailto:?subject=${assunto}&body=${encodeURIComponent(texto)}`;
 }

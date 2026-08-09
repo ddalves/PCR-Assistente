@@ -3,163 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCR Assistente</title>
+    <title>Suporte PCR</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="container-tela">
+    <!-- TELA 1: SELEÇÃO DE PERFIL E INÍCIO -->
+    <div id="tela-setup" class="tela ativa">
+        <div class="container-setup">
+            <span class="subtitulo-topo">APOIO AO ATENDIMENTO</span>
+            <h1 class="titulo-principal">Suporte PCR</h1>
+            <p class="alerta-uso">Cronômetro, lembretes por voz e registro de horários. Nada é salvo — o resumo só sai daqui se você enviar.</p>
 
-       <!-- TELA 1: SELEÇÃO DE PERFIL -->
-<div id="tela-setup" class="tela ativa">
-    <div class="header-setup">
-        <h1>PCR ASSISTENTE</h1>
-        <p class="subtitulo-topo">SELEÇÃO DE PERFIL</p>
+            <div class="opcoes-perfil">
+                <button class="card-perfil selecionado" onclick="selecionarPerfil(this, 'ADULTO')">
+                    <div class="perfil-info">
+                        <strong>Adulto</strong>
+                        <span>Compressão 30:2 até via aérea avançada</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'CRIANCA')">
+                    <div class="perfil-info">
+                        <strong>Criança</strong>
+                        <span>Compressão 15:2 com 2 socorristas</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'BEBE')">
+                    <div class="perfil-info">
+                        <strong>Bebê</strong>
+                        <span>Compressão 15:2 com 2 socorristas</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+            </div>
+
+            <button id="btn-iniciar-pcr" class="btn-iniciar ativo" onclick="iniciarPCR()">INICIAR PCR</button>
+
+            <p class="rodape-instrucao">Toque nos botões grandes durante o atendimento para marcar cada ação com o horário exato. Ferramenta de apoio — não substitui o protocolo da sua instituição.</p>
+        </div>
     </div>
 
-    <div class="perfis-lista">
-        <label class="btn-card-perfil btn-perfil-adulto">
-            <input type="radio" name="perfil-paciente" value="ADULTO" checked>
-            <div class="icone-perfil">
-                <img src="img/adulto.png" alt="Perfil Adulto">
-            </div>
-            <div class="texto-perfil">
-                <span class="titulo-perfil">ADULTO</span>
-                <span class="subtitulo-perfil">A partir da puberdade. Compressão 30:2</span>
-            </div>
-        </label>
+    <!-- TELA 2: ATENDIMENTO EM ANDAMENTO -->
+    <div id="tela-atendimento" class="tela">
+        <div class="header-atendimento">
+            <span id="relogio-agora" class="hora-topo">00:00:00</span>
+            <span class="badge-status">• PCR EM ANDAMENTO</span>
+            <button id="btn-som-master" class="btn-icone">🔊</button>
+        </div>
 
-        <label class="btn-card-perfil btn-perfil-crianca">
-            <input type="radio" name="perfil-paciente" value="CRIANCA">
-            <div class="icone-perfil">
-                <img src="img/crianca.png" alt="Perfil Criança">
+        <div class="painel-cronometro">
+            <span class="label-cronometro">TEMPO DE MANOBRAS</span>
+            <div id="cronometro-geral" class="display-tempo">00 : 00 : 00</div>
+            <div class="controles-ritmo">
+                <span class="badge-ritmo">❤️ 100–120/min</span>
+                <button id="btn-toggle-bip" class="btn-bip">🔔 Bip LIGADO</button>
             </div>
-            <div class="texto-perfil">
-                <span class="titulo-perfil">CRIANÇA</span>
-                <span class="subtitulo-perfil">De 1 ano até puberdade. Compressão 15:2</span>
-            </div>
-        </label>
+        </div>
 
-        <label class="btn-card-perfil btn-perfil-bebe">
-            <input type="radio" name="perfil-paciente" value="BEBE">
-            <div class="icone-perfil">
-                <img src="img/bebe.png" alt="Perfil Bebê">
+        <div class="secao-botoes">
+            <span class="label-secao">SUPORTE</span>
+            <div class="grid-botoes grid-suporte">
+                <button class="btn-acao btn-azul" onclick="registrarAcao('DEA / Desfibrilador conectado')">⚡ DEA</button>
+                <button class="btn-acao btn-azul" onclick="registrarAcao('Acesso EV/IO estabelecido')">💉 Acesso</button>
+                <button class="btn-acao btn-azul" onclick="registrarAcao('Glicemia mensurada')">🩸 Glicemia</button>
+                <button class="btn-acao btn-azul" onclick="acaoVentilacao()">🫁 Ventilação</button>
+                <button class="btn-acao btn-azul" onclick="registrarIntubacao()">🩺 Intubação</button>
+                <button class="btn-acao btn-azul" onclick="registrarAcao('Monitor Cardíaco instalado')">🖥️ Monitor</button>
             </div>
-            <div class="texto-perfil">
-                <span class="titulo-perfil">BEBÊ</span>
-                <span class="subtitulo-perfil">Menor de 1 ano. Compressão 15:2</span>
+        </div>
+
+        <div class="secao-botoes">
+            <span class="label-secao">INTERVENÇÕES</span>
+            <div class="grid-botoes grid-intervencoes">
+                <button class="btn-acao btn-vermelho" onclick="registrarMedicacao('Choque')">⚡ Choque (<span id="qtd-choque">0</span>)</button>
+                <button class="btn-acao btn-vermelho" onclick="registrarAdrenalina()">💉 Adrenalina (<span id="qtd-adrenalina">0</span>)</button>
+                <button class="btn-acao btn-vermelho" onclick="registrarAmiodarona()">💊 Amiodarona (<span id="qtd-amiodarona">0</span>)</button>
+                <button class="btn-acao btn-vermelho" onclick="registrarAcao('Checagem de pulso realizada')">🫀 Checar pulso</button>
             </div>
-        </label>
+        </div>
+
+        <div class="secao-botoes">
+            <span class="label-secao">RESULTADO</span>
+            <button class="btn-acao btn-verde btn-bloco" onclick="registrarRCE()">🟢 ROSC — Retorno da circulação</button>
+            <div class="grid-botoes-duplo">
+                <button class="btn-acao btn-outline" onclick="reiniciarPCR()">🔄 Nova PCR</button>
+                <button class="btn-acao btn-outline" onclick="finalizarAtendimento('Obito / Interrupção')">⏹️ Finalizar</button>
+            </div>
+        </div>
+
+        <div class="secao-linha-tempo">
+            <span class="label-secao">LINHA DO TEMPO</span>
+            <div class="container-feed">
+                <ul id="feed-linha-tempo" class="feed-list"></ul>
+            </div>
+        </div>
     </div>
-</div>
 
-            <button id="btn-iniciar-atendimento" class="btn-iniciar-pcr">INICIAR PCR</button>
-        </div>
-
-        <!-- TELA 2: ATENDIMENTO -->
-        <div id="tela-atendimento" class="tela">
-            
-            <!-- TOPO COM LUZ DO RITMO -->
-            <div class="topo-atendimento">
-                <span id="relogio-agora">00:00:00</span>
-                <div class="container-luz-bip">
-                    <div id="luz-ritmo" class="luz-ritmo"></div>
-                    <span class="label-luz">RITMO</span>
-                </div>
-                <button id="btn-som-master" class="btn-icone">🔊</button>
+    <!-- TELA 3: RESUMO E EXPORTAÇÃO -->
+    <div id="tela-resumo" class="tela">
+        <div class="container-resumo">
+            <h2>Relatório de Atendimento</h2>
+            <div class="card-resumo-info">
+                <p><strong id="resumo-status">--</strong></p>
+                <p>Início: <span id="resumo-inicio">00:00</span> | Término: <span id="resumo-termino">00:00</span></p>
+                <p>Duração Total: <strong id="resumo-duracao">00:00</strong></p>
             </div>
 
-            <!-- CARD CRONÔMETRO -->
-            <div class="card-cronometro">
-                <span class="titulo-cronometro">TEMPO DE MANOBRAS</span>
-                <div id="cronometro-geral">00:00:00</div>
-                <div class="controles-bip">
-                    <span>❤️ 100–120/min</span>
-                    <button id="btn-toggle-bip" class="btn-bip-toggle">🔔 Bip LIGADO</button>
-                </div>
-            </div>
-
-            <!-- SUPORTE -->
-            <div class="secao-grupo">
-                <h2>SUPORTE</h2>
-                <div class="grid-botoes-suporte">
-                    <button class="btn-suporte" onclick="registrarAcao('DEA / Desfibrilador conectado')">⚡ DEA</button>
-                    <button class="btn-suporte" onclick="registrarAcao('Acesso EV/IO estabelecido')">💉 Acesso EV/IO</button>
-                    <button onclick="acaoVentilacao()" class="btn-acao btn-ventilacao">
-                    <button class="btn-suporte btn-ventilacao" onclick="acaoVentilacao()">
-    <img src="img/ambu.png" alt="Ambu" class="icone-btn-ambu" />
-    <span>Ventilação</span>
-</button>
-                    <button class="btn-suporte" onclick="registrarAcao('Intubação / Via Aérea Avançada')">🩺 Intubação</button>
-                    <button class="btn-suporte" onclick="registrarAcao('Monitor Cardíaco instalado')">🖥️ Monitor</button>
-                </div>
-            </div>
-
-            <!-- INTERVENÇÕES -->
-            <div class="secao-grupo">
-                <h2>INTERVENÇÕES</h2>
-                <div class="grid-botoes-intervencao">
-                    <button class="btn-intervencao" onclick="registrarMedicacao('Choque')">⚡ Choque (<span id="qtd-choque">0</span>)</button>
-                    <button class="btn-intervencao" onclick="registrarMedicacao('Adrenalina')">💉 Adrenalina (<span id="qtd-adrenalina">0</span>)</button>
-                    <button class="btn-intervencao" onclick="registrarMedicacao('Amiodarona')">💊 Amiodarona (<span id="qtd-amiodarona">0</span>)</button>
-                </div>
-            </div>
-
-            <!-- RESULTADO E ENCERRAMENTO -->
-            <div class="secao-grupo">
-                <h2>RESULTADO</h2>
-                <button class="btn-rosc" onclick="finalizarAtendimento('ROSC')">💚 RCE — Retorno da circulação</button>
-                <div class="grid-botoes-rodape">
-                    <button class="btn-secundario" onclick="reiniciarPCR()">🔄 Nova PCR</button>
-                    <button class="btn-secundario" onclick="finalizarAtendimento('Óbito/Encerrado')">⏹️ Finalizar</button>
-                </div>
-            </div>
-
-            <!-- LINHA DO TEMPO EM TEMPO REAL -->
-            <div class="secao-grupo">
-                <h2>LINHA DO TEMPO</h2>
-                <ul id="feed-linha-tempo" class="feed-eventos"></ul>
-            </div>
-
-        </div>
-
-        <!-- TELA 3: RESUMO DA PCR -->
-        <div id="tela-resumo" class="tela">
-            <div class="resumo-header">
-                <div class="icone-check">✓</div>
-                <h2>Resumo do atendimento</h2>
-                <p id="resumo-status">Atendimento finalizado</p>
-            </div>
-
-            <div class="cards-tempo-grid">
-                <div class="card-tempo">
-                    <span class="label-tempo">INÍCIO</span>
-                    <span id="resumo-inicio" class="valor-tempo">--:--:--</span>
-                </div>
-                <div class="card-tempo">
-                    <span class="label-tempo">TÉRMINO</span>
-                    <span id="resumo-termino" class="valor-tempo">--:--:--</span>
-                </div>
-                <div class="card-tempo">
-                    <span class="label-tempo">DURAÇÃO</span>
-                    <span id="resumo-duracao" class="valor-tempo">00:00:00</span>
-                </div>
-            </div>
-
-            <div class="secao-grupo" style="margin-top: 15px;">
-                <h2>LINHA DO TEMPO COMPLETA</h2>
-                <ul id="feed-resumo-completo" class="feed-eventos-limpo"></ul>
+            <h3>Linha do Tempo Completa</h3>
+            <div class="container-feed">
+                <ul id="feed-resumo-completo" class="feed-list"></ul>
             </div>
 
             <div class="acoes-resumo">
-                <button class="btn-acao-verde" onclick="copiarResumo()">📋 Copiar resumo</button>
-                <button class="btn-acao-azul" onclick="enviarEmail()">✉️ Enviar por E-mail</button>
-                <button class="btn-secundario" onclick="novoAtendimento()">🔄 Novo atendimento</button>
+                <button class="btn-acao btn-azul" onclick="copiarResumo()">📋 Copiar Resumo</button>
+                <button class="btn-acao btn-verde" onclick="enviarEmail()">✉️ Enviar por E-mail</button>
+                <button class="btn-acao btn-outline" onclick="novoAtendimento()">← Novo Atendimento</button>
             </div>
-
-            <p class="aviso-rodape">Nenhum dado é salvo em servidores. O resumo só fica disponível durante esta sessão.</p>
         </div>
-
     </div>
 
     <script src="script.js"></script>

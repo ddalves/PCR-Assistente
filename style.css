@@ -1,390 +1,150 @@
-/* CONFIGURAÇÕES GERAIS */
-:root {
-    --bg-principal: #0b111e;
-    --bg-card: #1e1e1e;
-    --texto-principal: #ffffff;
-    --texto-secundario: #94a3b8;
-    --cor-sucesso: #16a34a;
-    --cor-perigo: #dc2626;
-    --cor-azul: #2563eb;
-}
-
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    background-color: var(--bg-principal);
-    color: var(--texto-principal);
+    background-color: #0b111e;
+    color: #ffffff;
     display: flex;
     justify-content: center;
     min-height: 100vh;
-    padding: 15px;
-}
-
-.container-tela {
-    width: 100%;
-    max-width: 480px;
 }
 
 .tela {
     display: none;
-    flex-direction: column;
-    gap: 15px;
+    width: 100%;
+    max-width: 480px;
+    padding: 20px;
 }
 
 .tela.ativa {
     display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
-/* TELA 1: SELEÇÃO DE PERFIL */
-.header-setup {
+/* TELA DE SETUP */
+.container-setup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    margin-bottom: 10px;
-}
-
-.header-setup h1 {
-    font-size: 1.6rem;
-    font-weight: 800;
+    gap: 16px;
+    margin: auto 0;
 }
 
 .subtitulo-topo {
-    font-size: 0.85rem;
-    color: var(--texto-secundario);
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    color: #8a99ad;
 }
 
-.perfis-lista {
+.titulo-principal {
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+.alerta-uso {
+    font-size: 0.85rem;
+    color: #a0aec0;
+    line-height: 1.4;
+    max-width: 320px;
+}
+
+.opcoes-perfil {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-}
-
-.btn-card-perfil {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    border-radius: 14px;
-    cursor: pointer;
-    border: 3px solid transparent;
-}
-
-.btn-card-perfil input { 
-    display: none; 
-}
-
-/* Ajuste dos ícones de perfil (imagens) */
-.icone-perfil {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 15px;
-    width: 42px;
-    height: 42px;
-    flex-shrink: 0;
-}
-
-.icone-perfil img {
+    gap: 10px;
     width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
 }
 
-.titulo-perfil {
-    font-size: 1.3rem;
-    font-weight: 800;
-    display: block;
-}
-
-.subtitulo-perfil {
-    font-size: 0.8rem;
-    opacity: 0.8;
-}
-
-.btn-perfil-adulto { background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%); }
-.btn-perfil-crianca { background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); }
-.btn-perfil-bebe { background: linear-gradient(180deg, #f97316 0%, #c2410c 100%); }
-
-.btn-card-perfil:has(input:checked) {
-    border-color: #ffffff;
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
-}
-
-.btn-iniciar-pcr {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    color: #fff;
-    padding: 16px;
+.card-perfil {
+    background-color: #162032;
+    border: 2px solid #233248;
     border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #fff;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.card-perfil.selecionado {
+    border-color: #3b82f6;
+    background-color: #1a2942;
+}
+
+.card-perfil .check-icon {
+    display: none;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.card-perfil.selecionado .check-icon {
+    display: block;
+}
+
+.perfil-info strong {
+    display: block;
     font-size: 1.1rem;
-    font-weight: 800;
-    cursor: pointer;
+    margin-bottom: 2px;
 }
 
-/* TELA 2: ATENDIMENTO */
-.topo-atendimento {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #0f172a;
-    padding: 10px 15px;
-    border-radius: 10px;
+.perfil-info span {
+    font-size: 0.8rem;
+    color: #8a99ad;
 }
 
-.container-luz-bip {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.luz-ritmo {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #334155;
-    box-shadow: 0 0 4px #000;
-    transition: background-color 0.05s ease, box-shadow 0.05s ease;
-}
-
-.luz-ritmo.piscando {
-    background-color: #ff0000;
-    box-shadow: 0 0 16px #ff0000, 0 0 30px #ff0000;
-}
-
-.label-luz {
-    font-size: 0.6rem;
-    color: var(--texto-secundario);
-    margin-top: 2px;
-    font-weight: bold;
-}
-
-.card-cronometro {
-    background-color: var(--cor-perigo);
-    border-radius: 16px;
-    padding: 18px;
-    text-align: center;
-}
-
-.titulo-cronometro {
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-    font-weight: bold;
-}
-
-#cronometro-geral {
-    font-size: 3.2rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    margin: 4px 0;
-}
-
-.controles-bip {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    font-size: 0.85rem;
-}
-
-.btn-bip-toggle {
-    background: rgba(0, 0, 0, 0.3);
-    border: none;
-    color: #fff;
-    padding: 5px 12px;
-    border-radius: 12px;
-    cursor: pointer;
-}
-
-/* GRIDS E BOTÕES DE AÇÃO */
-.secao-grupo h2 {
-    font-size: 0.75rem;
-    color: var(--texto-secundario);
-    margin-bottom: 6px;
-}
-
-.grid-botoes-suporte {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.grid-botoes-intervencao {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.btn-suporte {
-    background-color: var(--cor-azul);
-    border: none;
-    color: #fff;
-    padding: 12px 6px;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-/* Ajustes específicos do botão e ícone do Ambu */
-.btn-ventilacao {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-.icone-btn-ambu {
-    width: 22px;
-    height: 22px;
-    object-fit: contain;
-    display: block;
-}
-
-.btn-intervencao {
-    background-color: var(--cor-perigo);
-    border: none;
-    color: #fff;
-    padding: 14px 6px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-}
-
-.btn-rosc {
-    background-color: var(--cor-sucesso);
-    border: none;
-    color: #fff;
-    padding: 16px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
+.btn-iniciar {
     width: 100%;
-}
-
-.grid-botoes-rodape {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.btn-secundario {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    color: #fff;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: 600;
+    padding: 18px;
+    border-radius: 14px;
+    border: none;
+    font-size: 1.2rem;
+    font-weight: 800;
     cursor: pointer;
+    background-color: #2b1d24;
+    color: #6e4854;
+    transition: all 0.3s ease;
 }
 
-/* FEED DA LINHA DO TEMPO */
-.feed-eventos, .feed-eventos-limpo {
-    list-style: none;
-    max-height: 180px;
-    overflow-y: auto;
-    background-color: #0f172a;
-    border: 1px solid #1e293b;
-    border-radius: 10px;
-    padding: 10px;
+.btn-iniciar.ativo {
+    background-color: #dc2626;
+    color: #ffffff;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
 }
 
-.feed-eventos li, .feed-eventos-limpo li {
-    padding: 6px 0;
-    border-bottom: 1px solid #1e293b;
-    font-size: 0.85rem;
+.rodape-instrucao {
+    font-size: 0.75rem;
+    color: #64748b;
+    line-height: 1.3;
+}
+
+/* TELA DE ATENDIMENTO */
+.header-atendimento {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.hora-feed {
-    color: var(--texto-secundario);
-    font-size: 0.75rem;
-}
-
-/* TELA DE RESUMO */
-.resumo-header {
-    text-align: center;
-}
-
-.icone-check {
-    width: 38px;
-    height: 38px;
-    border: 2px solid var(--cor-sucesso);
-    color: var(--cor-sucesso);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 6px auto;
-    font-weight: bold;
-}
-
-.cards-tempo-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.card-tempo {
-    background-color: #0f172a;
-    border: 1px solid #1e293b;
+    background-color: #162032;
+    padding: 10px 16px;
     border-radius: 10px;
-    padding: 10px 4px;
-    text-align: center;
 }
 
-.label-tempo {
-    font-size: 0.65rem;
-    color: var(--texto-secundario);
-    display: block;
+.hora-topo {
+    font-family: monospace;
+    font-size: 1rem;
 }
 
-.valor-tempo {
-    font-size: 0.95rem;
-    font-weight: 800;
-}
-
-.acoes-resumo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.btn-acao-verde {
-    background-color: var(--cor-sucesso);
-    color: #fff;
-    border: none;
-    padding: 14px;
-    border-radius: 8px;
+.badge-status {
+    color: #22c55e;
+    font-size: 0.75rem;
     font-weight: bold;
-    cursor: pointer;
-}
-
-.btn-acao-azul {
-    background-color: var(--cor-azul);
-    color: #fff;
-    border: none;
-    padding: 14px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.aviso-rodape {
-    font-size: 0.7rem;
-    color: var(--texto-secundario);
-    text-align: center;
 }
 
 .btn-icone {
@@ -392,4 +152,156 @@ body {
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
+}
+
+.painel-cronometro {
+    background-color: #dc2626;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+}
+
+.label-cronometro {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.display-tempo {
+    font-size: 3rem;
+    font-weight: 900;
+    font-family: monospace;
+    margin: 8px 0;
+}
+
+.controles-ritmo {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.badge-ritmo {
+    background-color: rgba(0,0,0,0.2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+}
+
+.btn-bip {
+    background-color: rgba(0,0,0,0.3);
+    border: none;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* SEÇÕES E BOTÕES DE AÇÃO */
+.secao-botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.label-secao {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 1px;
+}
+
+.grid-botoes {
+    display: grid;
+    gap: 8px;
+}
+
+.grid-suporte {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.grid-intervencoes {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.grid-botoes-duplo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-acao {
+    padding: 14px 10px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.btn-bloco {
+    width: 100%;
+}
+
+.btn-azul { background-color: #2563eb; }
+.btn-vermelho { background-color: #dc2626; }
+.btn-verde { background-color: #16a34a; }
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+}
+
+/* LINHA DO TEMPO FEED */
+.container-feed {
+    background-color: #162032;
+    border-radius: 10px;
+    padding: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.feed-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.feed-list li {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    border-bottom: 1px solid #233248;
+    padding-bottom: 6px;
+}
+
+.ponto-bullet { color: #3b82f6; margin-right: 4px; }
+.hora-feed { color: #94a3b8; font-family: monospace; }
+.tempo-decorrido { color: #64748b; font-family: monospace; }
+
+/* TELA DE RESUMO */
+.container-resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card-resumo-info {
+    background-color: #162032;
+    padding: 16px;
+    border-radius: 10px;
+    line-height: 1.6;
+}
+
+.acoes-resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
