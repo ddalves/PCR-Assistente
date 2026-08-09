@@ -2,7 +2,7 @@
    CONFIGURAÇÕES GERAIS E VARIÁVEIS (DARK MODE EMERGÊNCIA)
    ========================================================================== */
 :root {
-    --bg-principal: #121212;
+    --bg-principal: #0b111e;
     --bg-card: #1e1e1e;
     --bg-card-hover: #2a2a2a;
     --texto-principal: #ffffff;
@@ -24,8 +24,8 @@
 }
 
 body {
-    background-color: #0b111e;
-    color: #ffffff;
+    background-color: var(--bg-principal);
+    color: var(--texto-principal);
     display: flex;
     justify-content: center;
     min-height: 100vh;
@@ -40,41 +40,132 @@ body {
     gap: 15px;
 }
 
-/* CARDS DE SELEÇÃO DE PERFIL */
-.perfis-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.card-perfil {
-    background-color: #1a2332;
-    border: 2px solid #2a364f;
-    border-radius: 12px;
-    padding: 15px 5px;
+/* ==========================================================================
+   TELA 1: SELEÇÃO DE PERFIL DE PACIENTE (DESIGN DA IMAGEM)
+   ========================================================================== */
+.header-setup {
     text-align: center;
-    cursor: pointer;
+    margin-bottom: 20px;
 }
 
-.card-perfil input { display: none; }
-
-.card-perfil:has(input:checked) {
-    border-color: #2563eb;
-    background-color: #1e293b;
+.header-setup h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #ffffff;
+    margin-bottom: 4px;
+    text-transform: uppercase;
 }
 
-.perfil-conteudo {
+.subtitulo-topo {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+/* Lista Vertical de Cards Coloridos */
+.perfis-lista {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
+    gap: 14px;
+    margin-bottom: 15px;
 }
 
-.icone-perfil { font-size: 2rem; }
+.btn-card-perfil {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 18px 24px;
+    border-radius: 16px;
+    cursor: pointer;
+    position: relative;
+    border: 3px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
 
-/* HEADER ATENDIMENTO */
+.btn-card-perfil input {
+    display: none;
+}
+
+/* Ícones e Tipografia do Card */
+.icone-perfil {
+    font-size: 2.4rem;
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.texto-perfil {
+    display: flex;
+    flex-direction: column;
+}
+
+.titulo-perfil {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+    line-height: 1.1;
+}
+
+.subtitulo-perfil {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+/* Gradientes dos Botões de Perfil */
+.btn-perfil-adulto {
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.btn-perfil-crianca {
+    background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
+}
+
+.btn-perfil-bebe {
+    background: linear-gradient(180deg, #f97316 0%, #c2410c 100%);
+}
+
+/* Destaque Visual ao Selecionar */
+.btn-card-perfil:has(input:checked) {
+    border-color: #ffffff;
+    box-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
+    transform: scale(1.02);
+}
+
+/* Botão de Ação Principal */
+.btn-iniciar-pcr {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #ffffff;
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-iniciar-pcr:hover {
+    background-color: #334155;
+}
+
+/* Suporte de fallback para seletor de grid antigo */
+.perfis-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ==========================================================================
+   TELA DE ATENDIMENTO
+   ========================================================================== */
 .header-atendimento {
     display: flex;
     justify-content: space-between;
@@ -90,7 +181,7 @@ body {
     font-weight: bold;
 }
 
-/* CRONÔMETRO CENTRAL */
+/* Cronômetro Central */
 .card-cronometro {
     background-color: #dc2626;
     border-radius: 16px;
@@ -120,22 +211,23 @@ body {
 }
 
 .btn-bip-toggle {
-    background: rgba(0,0,0,0.2);
+    background: rgba(0, 0, 0, 0.2);
     border: none;
-    color: #fff;
+    color: #ffffff;
     padding: 4px 10px;
     border-radius: 12px;
     cursor: pointer;
 }
 
-/* SEÇÕES E GRIDS DE BOTÕES */
+/* Seções e Grids de Botões de Ação */
 .secao-grupo {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.secao-grupo h2, .secao-grupo h3 {
+.secao-grupo h2, 
+.secao-grupo h3 {
     font-size: 0.75rem;
     color: #94a3b8;
     letter-spacing: 0.5px;
@@ -156,7 +248,7 @@ body {
 .btn-suporte {
     background-color: #2563eb;
     border: none;
-    color: white;
+    color: #ffffff;
     padding: 14px 8px;
     border-radius: 10px;
     font-weight: 600;
@@ -166,7 +258,7 @@ body {
 .btn-intervencao {
     background-color: #b91c1c;
     border: none;
-    color: white;
+    color: #ffffff;
     padding: 16px 8px;
     border-radius: 10px;
     font-weight: 700;
@@ -182,7 +274,7 @@ body {
 .btn-rosc {
     background-color: #16a34a;
     border: none;
-    color: white;
+    color: #ffffff;
     padding: 16px;
     border-radius: 10px;
     font-weight: 700;
@@ -199,7 +291,7 @@ body {
 .btn-secundario {
     background-color: #1e293b;
     border: 1px solid #334155;
-    color: white;
+    color: #ffffff;
     padding: 12px;
     border-radius: 8px;
     font-weight: 600;
@@ -209,7 +301,7 @@ body {
 .btn-principal {
     background-color: #2563eb;
     border: none;
-    color: white;
+    color: #ffffff;
     padding: 16px;
     border-radius: 10px;
     font-weight: bold;
@@ -217,8 +309,11 @@ body {
     cursor: pointer;
 }
 
-/* LINHA DO TEMPO LIMPA (ESTILO IMAGEM 3 - SEM CHAVES) */
-.feed-eventos, .feed-eventos-limpo {
+/* ==========================================================================
+   LINHA DO TEMPO E REGISTRO DE EVENTOS
+   ========================================================================== */
+.feed-eventos, 
+.feed-eventos-limpo {
     list-style: none;
     max-height: 200px;
     overflow-y: auto;
@@ -228,7 +323,8 @@ body {
     padding: 10px;
 }
 
-.feed-eventos-limpo li, .feed-eventos li {
+.feed-eventos-limpo li, 
+.feed-eventos li {
     padding: 8px 0;
     border-bottom: 1px solid #1e293b;
     font-size: 0.85rem;
@@ -244,7 +340,9 @@ body {
     margin-right: 6px;
 }
 
-/* CARDS DE TEMPO DO RESUMO (IMAGEM 3) */
+/* ==========================================================================
+   TELA DE RESUMO DE ATENDIMENTO
+   ========================================================================== */
 .resumo-header {
     text-align: center;
     margin-bottom: 10px;
@@ -296,7 +394,36 @@ body {
     margin-top: 10px;
 }
 
-.btn-acao-verde { background-color: #16a34a; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.btn-acao-azul { background-color: #2563eb; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; }
-.aviso-rodape { font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 10px; }
-.btn-icone { background: none; border: none; font-size: 1.2rem; cursor: pointer; }
+.btn-acao-verde { 
+    background-color: #16a34a; 
+    color: #ffffff; 
+    border: none; 
+    padding: 14px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    cursor: pointer; 
+}
+
+.btn-acao-azul { 
+    background-color: #2563eb; 
+    color: #ffffff; 
+    border: none; 
+    padding: 14px; 
+    border-radius: 8px; 
+    font-weight: bold; 
+    cursor: pointer; 
+}
+
+.aviso-rodape { 
+    font-size: 0.7rem; 
+    color: #64748b; 
+    text-align: center; 
+    margin-top: 10px; 
+}
+
+.btn-icone { 
+    background: none; 
+    border: none; 
+    font-size: 1.2rem; 
+    cursor: pointer; 
+}

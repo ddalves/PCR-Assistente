@@ -8,38 +8,47 @@
 </head>
 <body>
 
-    <!-- TELA 1: SELEÇÃO DE PERFIL E INÍCIO -->
-    <div id="tela-setup" class="container-tela">
-        <h1>Assistente de Apoio à PCR</h1>
-        <p>Selecione o perfil do paciente para iniciar:</p>
-        
-        <div class="perfis-grid">
-            <label class="card-perfil">
-                <input type="radio" name="perfil-paciente" value="adulto" checked>
-                <div class="perfil-conteudo">
-                    <span class="icone-perfil">👤</span>
-                    <span>Adulto</span>
-                </div>
-            </label>
-            <label class="card-perfil">
-                <input type="radio" name="perfil-paciente" value="pediatrico">
-                <div class="perfil-conteudo">
-                    <span class="icone-perfil">🧒</span>
-                    <span>Criança</span>
-                </div>
-            </label>
-            <label class="card-perfil">
-                <input type="radio" name="perfil-paciente" value="neonato">
-                <div class="perfil-conteudo">
-                    <span class="icone-perfil">👶</span>
-                    <span>Bebê</span>
-                </div>
-            </label>
-        </div>
-
-        <button id="btn-iniciar" class="btn-principal">INICIAR ATENDIMENTO</button>
+<!-- TELA 1: SELEÇÃO DE PERFIL E INÍCIO -->
+<div id="tela-setup" class="container-tela">
+    <div class="header-setup">
+        <h1>TIPO DE PACIENTE</h1>
+        <p class="subtitulo-topo">Selecione e inicie o atendimento</p>
     </div>
 
+    <div class="perfis-lista">
+        <!-- ADULTO -->
+        <label class="btn-card-perfil btn-perfil-adulto">
+            <input type="radio" name="perfil-paciente" value="adulto" checked>
+            <span class="icone-perfil">👤</span>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">ADULTO</span>
+                <span class="subtitulo-perfil">A partir dos sinais de puberdade</span>
+            </div>
+        </label>
+
+        <!-- CRIANÇA -->
+        <label class="btn-card-perfil btn-perfil-crianca">
+            <input type="radio" name="perfil-paciente" value="pediatrico">
+            <span class="icone-perfil">🧒</span>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">CRIANÇA</span>
+                <span class="subtitulo-perfil">1 ano até sinais de puberdade</span>
+            </div>
+        </label>
+
+        <!-- BEBÊ -->
+        <label class="btn-card-perfil btn-perfil-bebe">
+            <input type="radio" name="perfil-paciente" value="neonato">
+            <span class="icone-perfil">👶</span>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">BEBÊ</span>
+                <span class="subtitulo-perfil">Até 1 ano</span>
+            </div>
+        </label>
+    </div>
+
+    <button id="btn-iniciar" class="btn-iniciar-pcr">INICIAR ATENDIMENTO</button>
+</div>
     <!-- TELA 2: PAINEL DE ATENDIMENTO -->
     <div id="tela-atendimento" class="container-tela" style="display: none;">
         
