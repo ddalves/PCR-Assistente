@@ -13,7 +13,7 @@
     <header class="header-setup">
       <span class="subtitulo-topo">APOIO AO ATENDIMENTO</span>
       <h1 class="titulo-principal">Assistente de PCR</h1>
-      <p class="alerta-uso">Cronômetro e registro de horários. Nada é salvo — o resumo só sai daqui se você enviar.</p>
+      <p class="alerta-uso">Cronômetro, alertas sonoros e registro de horários em tempo real.</p>
     </header>
 
     <div class="secao-selecao">
@@ -47,46 +47,65 @@
 
       <button id="btn-iniciar-pcr" class="btn-iniciar" disabled onclick="iniciarPCR()">SELECIONE UM PERFIL</button>
     </div>
-
-    <p class="rodape-instrucao">Toque nos botões grandes durante o atendimento para marcar cada ação com o horário exato. Ferramenta de apoio — não substitui o protocolo da sua instituição.</p>
   </div>
 
   <!-- TELA 2: ATENDIMENTO EM ANDAMENTO -->
   <div id="mainScreen" class="tela-container hidden">
     
-    <!-- Cabeçalho com Luz e Cronômetro -->
-    <header class="pcr-header">
-      <div class="status-container">
-        <span class="status-light pulse-red" id="statusIndicator"></span>
-        <div class="header-info">
-          <span class="status-text">PCR em andamento</span>
-          <span class="profile-badge" id="selectedProfileBadge">--</span>
-        </div>
-      </div>
-      <div class="timer-display" id="mainTimer">00:00:00</div>
-    </header>
-
-    <!-- Alertas de Medicação -->
-    <div id="medAlertBox" class="alert-box hidden">
-      <span id="alertMessage">--</span>
+    <div class="top-status-bar">
+      <span class="clock-display" id="wallClock">00:00:00</span>
+      <span class="status-badge" id="statusBadge"><span class="status-dot"></span> PCR EM ANDAMENTO</span>
     </div>
 
-    <!-- 5 Ações Principais + Botão RCE -->
-    <main class="controls-grid">
-      <button class="btn btn-action" onclick="registerEvent('Choque / Desfibrilação')">⚡ Choque (DEA / Monitor)</button>
-      <button class="btn btn-action" onclick="handleAmiodarona()">💊 Amiodarona</button>
-      <button class="btn btn-action" onclick="handleAdrenalina()">💉 Adrenalina (1mg)</button>
-      <button class="btn btn-action" onclick="registerEvent('Acesso EV/IO estabelecido')">🩺 Acesso EV/IO</button>
-      <button class="btn btn-action" onclick="registerEvent('Via Aérea Avançada')">🫁 Via Aérea Avançada</button>
-      
-      <button class="btn btn-rce" onclick="finishRCE()">✅ RCE (Circulação Espontânea)</button>
-    </main>
+    <!-- Cronômetro Principal (HH:MM:SS) -->
+    <div class="timer-card red-card">
+      <span class="timer-title">TEMPO DE MANOBRAS</span>
+      <div class="timer-time" id="mainTimer">00:00:00</div>
+      <div class="timer-pills">
+        <span class="pill-info">100–120/min</span>
+        <span class="pill-info">🔔 Som Ativo</span>
+      </div>
+    </div>
 
-    <!-- Registros em tempo real -->
-    <section class="live-timeline">
-      <h3>Registros Recentes</h3>
-      <ul id="liveLogList"></ul>
-    </section>
+    <!-- SEÇÃO 1: SUPORTE (5 Botões) -->
+    <div class="section-block">
+      <span class="section-label">SUPORTE</span>
+      <div class="grid-suporte">
+        <button class="btn btn-blue" onclick="registerEvent('DEA instalado / analisando')">⚡ DEA</button>
+        <button class="btn btn-blue" onclick="registerEvent('Acesso EV/IO estabelecido')">💉 Acesso</button>
+        <button class="btn btn-blue" onclick="registerEvent('Ventilação com BVM')">🫁 Ventilação</button>
+        <button class="btn btn-blue" onclick="registerEvent('Intubação / V. Aérea Avançada')">🩺 Intubação</button>
+        <button class="btn btn-blue span-full" onclick="registerEvent('Monitor cardíaco instalado')">🖥️ Monitor</button>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 2: INTERVENÇÕES -->
+    <div class="section-block">
+      <span class="section-label">INTERVENÇÕES</span>
+      <div class="grid-2">
+        <button class="btn btn-red" onclick="handleChoque()">⚡ Choque ( <span id="countChoque">5</span> )</button>
+        <button class="btn btn-red" onclick="handleAdrenalina()">💉 Adrenalina ( <span id="countAdrenalina">0</span> )</button>
+      </div>
+      <button class="btn btn-red span-full margin-top-6" onclick="handleAmiodarona()">💊 Amiodarona ( <span id="countAmiodarona">0</span> )</button>
+    </div>
+
+    <!-- SEÇÃO 3: RESULTADO -->
+    <div class="section-block">
+      <span class="section-label">RESULTADO</span>
+      <button class="btn btn-green span-full" onclick="handleRCE()">🟢 RCE — Retorno da Circulação Espontânea</button>
+      <div class="grid-2 margin-top-8">
+        <button class="btn btn-dark" onclick="handleNovaPCR()">🔄 Nova PCR</button>
+        <button class="btn btn-orange" onclick="handleFinalizar()">⏹️ Finalizar</button>
+      </div>
+    </div>
+
+    <!-- SEÇÃO 4: LINHA DO TEMPO AO VIVO -->
+    <div class="section-block">
+      <span class="section-label">LINHA DO TEMPO</span>
+      <div class="timeline-container">
+        <ul id="liveLogList"></ul>
+      </div>
+    </div>
 
   </div>
 
@@ -114,9 +133,9 @@
     </div>
 
     <div class="action-buttons">
-      <button class="btn btn-primary" onclick="copySummary()">📋 Copiar Resumo</button>
-      <button class="btn btn-success" onclick="sendEmail()">✉️ Enviar por E-mail</button>
-      <button class="btn btn-secondary" onclick="resetApp()">← Novo Atendimento</button>
+      <button class="btn btn-blue" onclick="copySummary()">📋 Copiar Resumo</button>
+      <button class="btn btn-green" onclick="sendEmail()">✉️ Enviar por E-mail</button>
+      <button class="btn btn-dark" onclick="resetApp()">← Novo Atendimento</button>
     </div>
   </div>
 
