@@ -1,5 +1,5 @@
-// ESTADO GLOBAL DO APLICATIVO
-let perfilSelecionado = 'ADULTO';
+// ESTADO GLOBAL
+let perfilSelecionado = null;
 let tempoInicio = null;
 let tempoTermino = null;
 let timerGeral = null;
@@ -13,6 +13,8 @@ let timerAdrenalinaLembrete = null;
 let timerAmiodaronaLembrete = null;
 let wakeLock = null;
 
+let audioCtx = null;
+
 let contadores = {
     Choque: 0,
     Adrenalina: 0,
@@ -21,18 +23,25 @@ let contadores = {
 
 let eventosLinhaTempo = [];
 
-// MANTER TELA ACESA (Screen Wake Lock API)
-async function manterTelaAcesa() {
+// MANTER TELA ACESA (Screen Wake Lock API + Reativação ao voltar)
+async function ativarWakeLock() {
     try {
         if ('wakeLock' in navigator) {
             wakeLock = await navigator.wakeLock.request('screen');
         }
     } catch (err) {
-        console.log(`Wake Lock Error: ${err.message}`);
+        console.log(`WakeLock erro: ${err.message}`);
     }
 }
 
-// SINTETIZADOR DE VOZ (Volume máximo e prioridade)
+// Reativa WakeLock caso troque de aplicativo e volte
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        await ativarWakeLock();
+    }
+});
+
+// VOZ ALTA (Sintetizador)
 function falar(texto) {
     if (!somMasterAtivo) return;
     if ('speechSynthesis' in window) {
@@ -40,7 +49,7 @@ function falar(texto) {
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'pt-BR';
         utterance.rate = 1.1;
-        utterance.volume = 1.0; // Volume Máximo
+        utterance.volume = 1.0;
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -52,10 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btn-som-master').addEventListener('click', toggleSomMaster);
 });
 
+// SELEÇÃO EXPLÍCITA DE PERFIL
 function selecionarPerfil(elemento, perfil) {
     document.querySelectorAll('.card-perfil').forEach(c => c.classList.remove('selecionado'));
     elemento.classList.add('selecionado');
     perfilSelecionado = perfil;
+
+    const btnIniciar = document.getElementById('btn-iniciar-pcr');
+    btnIniciar.disabled = false;
+    btnIniciar.classList.add('ativo');
+    btnIniciar.textContent = `INICIAR PCR (${perfil})`;
 }
 
 function iniciarRelogioHoraReal() {
@@ -84,7 +99,9 @@ function alternarTela(idTela) {
 
 // INICIAR ATENDIMENTO
 function iniciarPCR() {
-    manterTelaAcesa();
+    if (!perfilSelecionado) return;
+
+    ativarWakeLock();
     tempoInicio = new Date();
     tempoSegundos = 0;
     eventosLinhaTempo = [];
@@ -106,32 +123,43 @@ function iniciarCronometro() {
         tempoSegundos++;
         document.getElementById('cronometro-geral').textContent = formatarTempo(tempoSegundos);
 
-        // Alerta de Ciclo de 2 Minutos
         if (tempoSegundos > 0 && tempoSegundos % 120 === 0) {
             falar("Atenção: dois minutos decorridos. Checar ritmo e pulso.");
         }
     }, 1000);
 }
 
+// METRÔNOMO E SINAL LUMINOSO
 function iniciarMetronomo() {
     if (timerBipRitmo) clearInterval(timerBipRitmo);
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const led = document.getElementById('sinal-luminoso');
 
     timerBipRitmo = setInterval(() => {
         if (bipAtivo && somMasterAtivo) {
             try {
+                // Áudio via Web Audio API (continua ativo em background)
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime); // Volume reforçado
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + 0.05);
+                osc.stop(audioCtx.currentTime + 0.06);
+
+                // Piscar o LED luminoso
+                if (led) {
+                    led.classList.add('pulso');
+                    setTimeout(() => led.classList.remove('pulso'), 100);
+                }
             } catch (e) { }
         }
-    }, 545);
+    }, 545); // ~110 bpm
 }
 
 function toggleBip() {
@@ -144,7 +172,7 @@ function toggleSomMaster() {
     document.getElementById('btn-som-master').textContent = somMasterAtivo ? "🔊" : "🔇";
 }
 
-// ACOES MEDICAMENTOSAS E VIA AÉREA
+// AÇÕES
 function acaoVentilacao() {
     if (perfilSelecionado === 'CRIANCA' || perfilSelecionado === 'BEBE') {
         falar("Iniciar 15 por 2");
@@ -165,22 +193,21 @@ function registrarAdrenalina() {
     atualizarContadoresUI();
     registrarEvento(`Adrenalina (${contadores.Adrenalina}ª dose)`);
 
-    // Alerta de retorno da Adrenalina em 3 min
     if (timerAdrenalinaLembrete) clearTimeout(timerAdrenalinaLembrete);
     timerAdrenalinaLembrete = setTimeout(() => {
         falar("Atenção: 3 minutos da última Adrenalina.");
-    }, 180000); // 3 minutos
+    }, 180000);
 }
 
 function registrarAmiodarona() {
     contadores.Amiodarona++;
     atualizarContadoresUI();
-    
+
     if (contadores.Amiodarona === 1) {
-        registrarEvento("Amiodarona (1ª dose - 300mg)");
+        registrarEvento("Amiodarona. (1ª dose - 300mg)");
         if (timerAmiodaronaLembrete) clearTimeout(timerAmiodaronaLembrete);
         timerAmiodaronaLembrete = setTimeout(() => {
-            falar("Atenção: Avaliar segunda dose de Amiodarona 150 miligramas se necessário.");
+            falar("Atenção: Avaliar segunda dose de Amiodarona. 150 miligramas se necessário.");
         }, 180000);
     } else {
         registrarEvento(`Amiodarona (${contadores.Amiodarona}ª dose - 150mg)`);
@@ -212,8 +239,8 @@ function atualizarContadoresUI() {
 
 function registrarEvento(descricao) {
     const hora = obterHoraAtual();
-    const tempoDecorrito = formatarTempo(tempoSegundos);
-    eventosLinhaTempo.push({ hora, tempoParada: tempoDecorrito, descricao });
+    const tempoParada = formatarTempo(tempoSegundos);
+    eventosLinhaTempo.push({ hora, tempoParada, descricao });
     atualizarLinhaTempoUI();
 }
 
@@ -232,7 +259,7 @@ function reiniciarPCR() {
         tempoSegundos = 0;
         if (timerAdrenalinaLembrete) clearTimeout(timerAdrenalinaLembrete);
         if (timerAmiodaronaLembrete) clearTimeout(timerAmiodaronaLembrete);
-        
+
         registrarEvento("Nova PCR identificada — Reinício de manobras");
         falar("Nova PCR identificada. Reiniciando compressões.");
         iniciarCronometro();
@@ -267,6 +294,15 @@ function finalizarAtendimento(status) {
 function novoAtendimento() {
     clearInterval(timerGeral);
     if (timerBipRitmo) clearInterval(timerBipRitmo);
+
+    perfilSelecionado = null;
+    document.querySelectorAll('.card-perfil').forEach(c => c.classList.remove('selecionado'));
+
+    const btnIniciar = document.getElementById('btn-iniciar-pcr');
+    btnIniciar.disabled = true;
+    btnIniciar.classList.remove('ativo');
+    btnIniciar.textContent = 'SELECIONE UM PERFIL';
+
     alternarTela('tela-setup');
 }
 

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Suporte PCR</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -15,8 +15,10 @@
             <h1 class="titulo-principal">Suporte PCR</h1>
             <p class="alerta-uso">Cronômetro, lembretes por voz e registro de horários. Nada é salvo — o resumo só sai daqui se você enviar.</p>
 
+            <p class="instrucao-selecao"><strong>Selecione o perfil do paciente:</strong></p>
+
             <div class="opcoes-perfil">
-                <button class="card-perfil selecionado" onclick="selecionarPerfil(this, 'ADULTO')">
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'ADULTO')">
                     <div class="perfil-info">
                         <strong>Adulto</strong>
                         <span>Compressão 30:2 até via aérea avançada</span>
@@ -41,7 +43,8 @@
                 </button>
             </div>
 
-            <button id="btn-iniciar-pcr" class="btn-iniciar ativo" onclick="iniciarPCR()">INICIAR PCR</button>
+            <!-- Inicia desativado por padrão -->
+            <button id="btn-iniciar-pcr" class="btn-iniciar" disabled onclick="iniciarPCR()">SELECIONE UM PERFIL</button>
 
             <p class="rodape-instrucao">Toque nos botões grandes durante o atendimento para marcar cada ação com o horário exato. Ferramenta de apoio — não substitui o protocolo da sua instituição.</p>
         </div>
@@ -59,7 +62,8 @@
             <span class="label-cronometro">TEMPO DE MANOBRAS</span>
             <div id="cronometro-geral" class="display-tempo">00 : 00 : 00</div>
             <div class="controles-ritmo">
-                <span class="badge-ritmo">❤️ 100–120/min</span>
+                <span id="sinal-luminoso" class="sinal-led">🔴</span>
+                <span class="badge-ritmo">100–120/min</span>
                 <button id="btn-toggle-bip" class="btn-bip">🔔 Bip LIGADO</button>
             </div>
         </div>
@@ -91,7 +95,7 @@
             <button class="btn-acao btn-verde btn-bloco" onclick="registrarRCE()">🟢 ROSC — Retorno da circulação</button>
             <div class="grid-botoes-duplo">
                 <button class="btn-acao btn-outline" onclick="reiniciarPCR()">🔄 Nova PCR</button>
-                <button class="btn-acao btn-outline" onclick="finalizarAtendimento('Obito / Interrupção')">⏹️ Finalizar</button>
+                <button class="btn-acao btn-outline" onclick="finalizarAtendimento('Óbito / Interrupção')">⏹️ Finalizar</button>
             </div>
         </div>
 
@@ -103,7 +107,7 @@
         </div>
     </div>
 
-    <!-- TELA 3: RESUMO E EXPORTAÇÃO -->
+    <!-- TELA 3: RESUMO -->
     <div id="tela-resumo" class="tela">
         <div class="container-resumo">
             <h2>Relatório de Atendimento</h2>

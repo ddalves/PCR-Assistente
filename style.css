@@ -3,6 +3,7 @@
     margin: 0;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -13,17 +14,27 @@ body {
     min-height: 100vh;
 }
 
+/* RESET E ESTILIZAÇÃO MÓVEL PARA BOTÕES */
+button, input[type="button"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
 .tela {
     display: none;
     width: 100%;
     max-width: 480px;
-    padding: 20px;
+    padding: 16px;
 }
 
 .tela.ativa {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 16px;
 }
 
 /* TELA DE SETUP */
@@ -32,7 +43,7 @@ body {
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 16px;
+    gap: 14px;
     margin: auto 0;
 }
 
@@ -51,7 +62,12 @@ body {
     font-size: 0.85rem;
     color: #a0aec0;
     line-height: 1.4;
-    max-width: 320px;
+}
+
+.instrucao-selecao {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+    margin-top: 6px;
 }
 
 .opcoes-perfil {
@@ -70,7 +86,6 @@ body {
     justify-content: space-between;
     align-items: center;
     color: #fff;
-    cursor: pointer;
     text-align: left;
     transition: all 0.2s ease;
 }
@@ -84,6 +99,7 @@ body {
     display: none;
     font-weight: bold;
     color: #3b82f6;
+    font-size: 1.2rem;
 }
 
 .card-perfil.selecionado .check-icon {
@@ -101,23 +117,22 @@ body {
     color: #8a99ad;
 }
 
+/* BOTÃO INICIAR DESATIVADO / ATIVO */
 .btn-iniciar {
     width: 100%;
     padding: 18px;
     border-radius: 14px;
-    border: none;
     font-size: 1.2rem;
     font-weight: 800;
-    cursor: pointer;
-    background-color: #2b1d24;
-    color: #6e4854;
+    background-color: #1e293b;
+    color: #64748b;
     transition: all 0.3s ease;
 }
 
 .btn-iniciar.ativo {
     background-color: #dc2626;
     color: #ffffff;
-    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4);
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
 }
 
 .rodape-instrucao {
@@ -149,15 +164,13 @@ body {
 
 .btn-icone {
     background: none;
-    border: none;
     font-size: 1.2rem;
-    cursor: pointer;
 }
 
 .painel-cronometro {
     background-color: #dc2626;
     border-radius: 16px;
-    padding: 20px;
+    padding: 18px;
     text-align: center;
     box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
 }
@@ -172,34 +185,45 @@ body {
     font-size: 3rem;
     font-weight: 900;
     font-family: monospace;
-    margin: 8px 0;
+    margin: 6px 0;
 }
 
 .controles-ritmo {
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
 
+/* SINAL LUMINOSO DO RITMO */
+.sinal-led {
+    font-size: 1rem;
+    opacity: 0.2;
+    transition: opacity 0.1s ease-in-out;
+}
+
+.sinal-led.pulso {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px #ffffff);
+}
+
 .badge-ritmo {
-    background-color: rgba(0,0,0,0.2);
+    background-color: rgba(0,0,0,0.25);
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
+    font-weight: 600;
 }
 
 .btn-bip {
-    background-color: rgba(0,0,0,0.3);
-    border: none;
+    background-color: rgba(0,0,0,0.35);
     color: #fff;
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
-    cursor: pointer;
 }
 
-/* SEÇÕES E BOTÕES DE AÇÃO */
+/* SEÇÕES E BOTÕES */
 .secao-botoes {
     display: flex;
     flex-direction: column;
@@ -235,31 +259,28 @@ body {
 .btn-acao {
     padding: 14px 10px;
     border-radius: 10px;
-    border: none;
     font-weight: 700;
     font-size: 0.9rem;
     color: #fff;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.btn-bloco {
-    width: 100%;
-}
+.btn-bloco { width: 100%; }
 
 .btn-azul { background-color: #2563eb; }
 .btn-vermelho { background-color: #dc2626; }
 .btn-verde { background-color: #16a34a; }
 .btn-outline {
-    background-color: transparent;
+    background-color: #1e293b;
     border: 1px solid #334155;
     color: #cbd5e1;
 }
 
-/* LINHA DO TEMPO FEED */
+/* LINHA DO TEMPO */
 .container-feed {
     background-color: #162032;
     border-radius: 10px;
@@ -286,7 +307,7 @@ body {
 .hora-feed { color: #94a3b8; font-family: monospace; }
 .tempo-decorrido { color: #64748b; font-family: monospace; }
 
-/* TELA DE RESUMO */
+/* TELA RESUMO */
 .container-resumo {
     display: flex;
     flex-direction: column;
