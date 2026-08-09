@@ -1,328 +1,166 @@
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {
-    background-color: #0b111e;
-    color: #ffffff;
-    display: flex;
-    justify-content: center;
-    min-height: 100vh;
+  background-color: #0f172a;
+  color: #f8fafc;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
 }
 
-/* RESET E ESTILIZAÇÃO MÓVEL PARA BOTÕES */
-button, input[type="button"] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    border: none;
-    font-family: inherit;
-    cursor: pointer;
+.app-container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.tela {
-    display: none;
-    width: 100%;
-    max-width: 480px;
-    padding: 16px;
+.hidden {
+  display: none !important;
 }
 
-.tela.ativa {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+/* Cabeçalho */
+.pcr-header {
+  background-color: #1e293b;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #334155;
 }
 
-/* TELA DE SETUP */
-.container-setup {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 14px;
-    margin: auto 0;
+.status-container {
+  display: flex;
+  align-items: center;
 }
 
-.subtitulo-topo {
-    font-size: 0.75rem;
-    letter-spacing: 1.5px;
-    color: #8a99ad;
+.status-text {
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
-.titulo-principal {
-    font-size: 2rem;
-    font-weight: 800;
+/* Luz de Status Pulso */
+.status-light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 8px;
+  display: inline-block;
 }
 
-.alerta-uso {
-    font-size: 0.85rem;
-    color: #a0aec0;
-    line-height: 1.4;
+.pulse-red {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: pulse 1s infinite;
 }
 
-.instrucao-selecao {
-    font-size: 0.9rem;
-    color: #cbd5e1;
-    margin-top: 6px;
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
-.opcoes-perfil {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
+.timer-display {
+  font-family: monospace;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #38bdf8;
 }
 
-.card-perfil {
-    background-color: #162032;
-    border: 2px solid #233248;
-    border-radius: 12px;
-    padding: 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #fff;
-    text-align: left;
-    transition: all 0.2s ease;
+/* Alertas de Medicação */
+.alert-box {
+  background-color: #b91c1c;
+  color: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  animation: bounce 0.5s infinite alternate;
 }
 
-.card-perfil.selecionado {
-    border-color: #3b82f6;
-    background-color: #1a2942;
+/* Botoes */
+.controls-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.card-perfil .check-icon {
-    display: none;
-    font-weight: bold;
-    color: #3b82f6;
-    font-size: 1.2rem;
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.card-perfil.selecionado .check-icon {
-    display: block;
+.btn-action {
+  background-color: #334155;
+  color: #ffffff;
+  text-align: left;
 }
 
-.perfil-info strong {
-    display: block;
-    font-size: 1.1rem;
-    margin-bottom: 2px;
+.btn-rce {
+  background-color: #16a34a;
+  color: #ffffff;
+  margin-top: 10px;
 }
 
-.perfil-info span {
-    font-size: 0.8rem;
-    color: #8a99ad;
+.btn-primary { background-color: #2563eb; color: #fff; width: 100%; }
+.btn-success { background-color: #16a34a; color: #fff; width: 100%; }
+.btn-secondary { background-color: #475569; color: #fff; width: 100%; }
+
+/* Relatório */
+.summary-card {
+  background-color: #1e293b;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
 }
 
-/* BOTÃO INICIAR DESATIVADO / ATIVO */
-.btn-iniciar {
-    width: 100%;
-    padding: 18px;
-    border-radius: 14px;
-    font-size: 1.2rem;
-    font-weight: 800;
-    background-color: #1e293b;
-    color: #64748b;
-    transition: all 0.3s ease;
+.time-info {
+  margin-bottom: 8px;
 }
 
-.btn-iniciar.ativo {
-    background-color: #dc2626;
-    color: #ffffff;
-    box-shadow: 0 0 20px rgba(220, 38, 38, 0.5);
+.separator {
+  margin: 0 8px;
+  color: #64748b;
 }
 
-.rodape-instrucao {
-    font-size: 0.75rem;
-    color: #64748b;
-    line-height: 1.3;
+.duration-info {
+  font-size: 1.2rem;
+  color: #38bdf8;
 }
 
-/* TELA DE ATENDIMENTO */
-.header-atendimento {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #162032;
-    padding: 10px 16px;
-    border-radius: 10px;
+.timeline-box {
+  background-color: #020617;
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #1e293b;
 }
 
-.hora-topo {
-    font-family: monospace;
-    font-size: 1rem;
+ul {
+  list-style: none;
 }
 
-.badge-status {
-    color: #22c55e;
-    font-size: 0.75rem;
-    font-weight: bold;
+li {
+  padding: 6px 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: 0.9rem;
 }
 
-.btn-icone {
-    background: none;
-    font-size: 1.2rem;
-}
-
-.painel-cronometro {
-    background-color: #dc2626;
-    border-radius: 16px;
-    padding: 18px;
-    text-align: center;
-    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
-}
-
-.label-cronometro {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-}
-
-.display-tempo {
-    font-size: 3rem;
-    font-weight: 900;
-    font-family: monospace;
-    margin: 6px 0;
-}
-
-.controles-ritmo {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    align-items: center;
-}
-
-/* SINAL LUMINOSO DO RITMO */
-.sinal-led {
-    font-size: 1rem;
-    opacity: 0.2;
-    transition: opacity 0.1s ease-in-out;
-}
-
-.sinal-led.pulso {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px #ffffff);
-}
-
-.badge-ritmo {
-    background-color: rgba(0,0,0,0.25);
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
-.btn-bip {
-    background-color: rgba(0,0,0,0.35);
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-}
-
-/* SEÇÕES E BOTÕES */
-.secao-botoes {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.label-secao {
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: #64748b;
-    letter-spacing: 1px;
-}
-
-.grid-botoes {
-    display: grid;
-    gap: 8px;
-}
-
-.grid-suporte {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-.grid-intervencoes {
-    grid-template-columns: repeat(2, 1fr);
-}
-
-.grid-botoes-duplo {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.btn-acao {
-    padding: 14px 10px;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.btn-bloco { width: 100%; }
-
-.btn-azul { background-color: #2563eb; }
-.btn-vermelho { background-color: #dc2626; }
-.btn-verde { background-color: #16a34a; }
-.btn-outline {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    color: #cbd5e1;
-}
-
-/* LINHA DO TEMPO */
-.container-feed {
-    background-color: #162032;
-    border-radius: 10px;
-    padding: 12px;
-    max-height: 180px;
-    overflow-y: auto;
-}
-
-.feed-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.feed-list li {
-    font-size: 0.85rem;
-    color: #cbd5e1;
-    border-bottom: 1px solid #233248;
-    padding-bottom: 6px;
-}
-
-.ponto-bullet { color: #3b82f6; margin-right: 4px; }
-.hora-feed { color: #94a3b8; font-family: monospace; }
-.tempo-decorrido { color: #64748b; font-family: monospace; }
-
-/* TELA RESUMO */
-.container-resumo {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.card-resumo-info {
-    background-color: #162032;
-    padding: 16px;
-    border-radius: 10px;
-    line-height: 1.6;
-}
-
-.acoes-resumo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
 }
