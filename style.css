@@ -1,26 +1,19 @@
-/* ==========================================================================
-   CONFIGURAÇÕES GERAIS E VARIÁVEIS (DARK MODE EMERGÊNCIA)
-   ========================================================================== */
+/* CONFIGURAÇÕES GERAIS */
 :root {
     --bg-principal: #0b111e;
     --bg-card: #1e1e1e;
-    --bg-card-hover: #2a2a2a;
     --texto-principal: #ffffff;
-    --texto-secundario: #b0b0b0;
-    
-    /* Cores de Alerta e Ação */
-    --cor-primaria: #00e676;      /* Verde Neon (Sucesso/RCE) */
-    --cor-perigo: #ff5252;        /* Vermelho (Emergência/Choque) */
-    --cor-alerta: #ffd600;        /* Amarelo (Avisos/Atenção) */
-    --cor-info: #29b6f6;          /* Azul (Procedimentos) */
-    --borda-card: #333333;
+    --texto-secundario: #94a3b8;
+    --cor-sucesso: #16a34a;
+    --cor-perigo: #dc2626;
+    --cor-azul: #2563eb;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
@@ -35,172 +28,142 @@ body {
 .container-tela {
     width: 100%;
     max-width: 480px;
-    display: flex;
+}
+
+.tela {
+    display: none;
     flex-direction: column;
     gap: 15px;
 }
 
-/* ==========================================================================
-   TELA 1: SELEÇÃO DE PERFIL DE PACIENTE (DESIGN DA IMAGEM)
-   ========================================================================== */
+.tela.ativa {
+    display: flex;
+}
+
+/* TELA 1: SELEÇÃO DE PERFIL */
 .header-setup {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .header-setup h1 {
     font-size: 1.6rem;
     font-weight: 800;
-    letter-spacing: 1px;
-    color: #ffffff;
-    margin-bottom: 4px;
-    text-transform: uppercase;
 }
 
 .subtitulo-topo {
-    font-size: 0.9rem;
-    color: #94a3b8;
-}
-
-/* Lista Vertical de Cards Coloridos */
-.perfis-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 15px;
-}
-
-.btn-card-perfil {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 18px 24px;
-    border-radius: 16px;
-    cursor: pointer;
-    position: relative;
-    border: 3px solid transparent;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-    user-select: none;
-}
-
-.btn-card-perfil input {
-    display: none;
-}
-
-/* Ícones e Tipografia do Card */
-.icone-perfil {
-    font-size: 2.4rem;
-    margin-right: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-
-.texto-perfil {
-    display: flex;
-    flex-direction: column;
-}
-
-.titulo-perfil {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-    line-height: 1.1;
-}
-
-.subtitulo-perfil {
     font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.85);
-    margin-top: 3px;
-    font-weight: 500;
+    color: var(--texto-secundario);
 }
 
-/* Gradientes dos Botões de Perfil */
-.btn-perfil-adulto {
-    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
-}
-
-.btn-perfil-crianca {
-    background: linear-gradient(180deg, #22c55e 0%, #15803d 100%);
-}
-
-.btn-perfil-bebe {
-    background: linear-gradient(180deg, #f97316 0%, #c2410c 100%);
-}
-
-/* Destaque Visual ao Selecionar */
-.btn-card-perfil:has(input:checked) {
-    border-color: #ffffff;
-    box-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
-    transform: scale(1.02);
-}
-
-/* Botão de Ação Principal */
-.btn-iniciar-pcr {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    color: #ffffff;
-    width: 100%;
-    padding: 18px;
-    border-radius: 14px;
-    font-size: 1.1rem;
-    font-weight: 800;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.btn-iniciar-pcr:hover {
-    background-color: #334155;
-}
-
-/* Suporte de fallback para seletor de grid antigo */
-.perfis-grid {
+.perfis-lista {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-/* ==========================================================================
-   TELA DE ATENDIMENTO
-   ========================================================================== */
-.header-atendimento {
+.btn-card-perfil {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border-radius: 14px;
+    cursor: pointer;
+    border: 3px solid transparent;
+}
+
+.btn-card-perfil input { display: none; }
+
+.icone-perfil {
+    font-size: 2.2rem;
+    margin-right: 15px;
+}
+
+.titulo-perfil {
+    font-size: 1.3rem;
+    font-weight: 800;
+    display: block;
+}
+
+.subtitulo-perfil {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.btn-perfil-adulto { background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%); }
+.btn-perfil-crianca { background: linear-gradient(180deg, #22c55e 0%, #15803d 100%); }
+.btn-perfil-bebe { background: linear-gradient(180deg, #f97316 0%, #c2410c 100%); }
+
+.btn-card-perfil:has(input:checked) {
+    border-color: #ffffff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+}
+
+.btn-iniciar-pcr {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #fff;
+    padding: 16px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+/* TELA 2: ATENDIMENTO */
+.topo-atendimento {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background-color: #0f172a;
+    padding: 10px 15px;
+    border-radius: 10px;
 }
 
-.badge-status {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: #10b981;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
+.container-luz-bip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.luz-ritmo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #334155;
+    box-shadow: 0 0 4px #000;
+    transition: background-color 0.05s ease, box-shadow 0.05s ease;
+}
+
+.luz-ritmo.piscando {
+    background-color: #ff0000;
+    box-shadow: 0 0 16px #ff0000, 0 0 30px #ff0000;
+}
+
+.label-luz {
+    font-size: 0.6rem;
+    color: var(--texto-secundario);
+    margin-top: 2px;
     font-weight: bold;
 }
 
-/* Cronômetro Central */
 .card-cronometro {
-    background-color: #dc2626;
+    background-color: var(--cor-perigo);
     border-radius: 16px;
-    padding: 20px;
+    padding: 18px;
     text-align: center;
 }
 
 .titulo-cronometro {
     font-size: 0.75rem;
     letter-spacing: 1px;
-    opacity: 0.9;
     font-weight: bold;
 }
 
 #cronometro-geral {
-    font-size: 3.5rem;
+    font-size: 3.2rem;
     font-weight: 800;
-    margin: 5px 0;
     font-variant-numeric: tabular-nums;
+    margin: 4px 0;
 }
 
 .controles-bip {
@@ -211,26 +174,19 @@ body {
 }
 
 .btn-bip-toggle {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     border: none;
-    color: #ffffff;
-    padding: 4px 10px;
+    color: #fff;
+    padding: 5px 12px;
     border-radius: 12px;
     cursor: pointer;
 }
 
-/* Seções e Grids de Botões de Ação */
-.secao-grupo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.secao-grupo h2, 
-.secao-grupo h3 {
+/* GRIDS E BOTÕES DE AÇÃO */
+.secao-grupo h2 {
     font-size: 0.75rem;
-    color: #94a3b8;
-    letter-spacing: 0.5px;
+    color: var(--texto-secundario);
+    margin-bottom: 6px;
 }
 
 .grid-botoes-suporte {
@@ -241,81 +197,65 @@ body {
 
 .grid-botoes-intervencao {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
 }
 
 .btn-suporte {
-    background-color: #2563eb;
+    background-color: var(--cor-azul);
     border: none;
-    color: #ffffff;
-    padding: 14px 8px;
+    color: #fff;
+    padding: 12px 6px;
     border-radius: 10px;
     font-weight: 600;
+    font-size: 0.85rem;
     cursor: pointer;
 }
 
 .btn-intervencao {
-    background-color: #b91c1c;
+    background-color: var(--cor-perigo);
     border: none;
-    color: #ffffff;
-    padding: 16px 8px;
+    color: #fff;
+    padding: 14px 6px;
     border-radius: 10px;
     font-weight: 700;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     cursor: pointer;
 }
 
-.btn-suporte.btn-ativo {
-    background-color: #1d4ed8;
-    outline: 2px solid #60a5fa;
-}
-
 .btn-rosc {
-    background-color: #16a34a;
+    background-color: var(--cor-sucesso);
     border: none;
-    color: #ffffff;
+    color: #fff;
     padding: 16px;
     border-radius: 10px;
     font-weight: 700;
     font-size: 1rem;
     cursor: pointer;
+    width: 100%;
 }
 
 .grid-botoes-rodape {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+    margin-top: 8px;
 }
 
 .btn-secundario {
     background-color: #1e293b;
     border: 1px solid #334155;
-    color: #ffffff;
+    color: #fff;
     padding: 12px;
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
 }
 
-.btn-principal {
-    background-color: #2563eb;
-    border: none;
-    color: #ffffff;
-    padding: 16px;
-    border-radius: 10px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-}
-
-/* ==========================================================================
-   LINHA DO TEMPO E REGISTRO DE EVENTOS
-   ========================================================================== */
-.feed-eventos, 
-.feed-eventos-limpo {
+/* FEED DA LINHA DO TEMPO */
+.feed-eventos, .feed-eventos-limpo {
     list-style: none;
-    max-height: 200px;
+    max-height: 180px;
     overflow-y: auto;
     background-color: #0f172a;
     border: 1px solid #1e293b;
@@ -323,9 +263,8 @@ body {
     padding: 10px;
 }
 
-.feed-eventos-limpo li, 
-.feed-eventos li {
-    padding: 8px 0;
+.feed-eventos li, .feed-eventos-limpo li {
+    padding: 6px 0;
     border-bottom: 1px solid #1e293b;
     font-size: 0.85rem;
     display: flex;
@@ -333,31 +272,26 @@ body {
     align-items: center;
 }
 
-.feed-eventos-limpo li::before {
-    content: "• ";
-    color: #f59e0b;
-    font-weight: bold;
-    margin-right: 6px;
+.hora-feed {
+    color: var(--texto-secundario);
+    font-size: 0.75rem;
 }
 
-/* ==========================================================================
-   TELA DE RESUMO DE ATENDIMENTO
-   ========================================================================== */
+/* TELA DE RESUMO */
 .resumo-header {
     text-align: center;
-    margin-bottom: 10px;
 }
 
 .icone-check {
-    width: 40px;
-    height: 40px;
-    border: 2px solid #10b981;
-    color: #10b981;
+    width: 38px;
+    height: 38px;
+    border: 2px solid var(--cor-sucesso);
+    color: var(--cor-sucesso);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 10px auto;
+    margin: 0 auto 6px auto;
     font-weight: bold;
 }
 
@@ -371,14 +305,13 @@ body {
     background-color: #0f172a;
     border: 1px solid #1e293b;
     border-radius: 10px;
-    padding: 12px 5px;
+    padding: 10px 4px;
     text-align: center;
 }
 
 .label-tempo {
     font-size: 0.65rem;
-    color: #64748b;
-    font-weight: 700;
+    color: var(--texto-secundario);
     display: block;
 }
 
@@ -394,36 +327,35 @@ body {
     margin-top: 10px;
 }
 
-.btn-acao-verde { 
-    background-color: #16a34a; 
-    color: #ffffff; 
-    border: none; 
-    padding: 14px; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
+.btn-acao-verde {
+    background-color: var(--cor-sucesso);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-.btn-acao-azul { 
-    background-color: #2563eb; 
-    color: #ffffff; 
-    border: none; 
-    padding: 14px; 
-    border-radius: 8px; 
-    font-weight: bold; 
-    cursor: pointer; 
+.btn-acao-azul {
+    background-color: var(--cor-azul);
+    color: #fff;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
 }
 
-.aviso-rodape { 
-    font-size: 0.7rem; 
-    color: #64748b; 
-    text-align: center; 
-    margin-top: 10px; 
+.aviso-rodape {
+    font-size: 0.7rem;
+    color: var(--texto-secundario);
+    text-align: center;
 }
 
-.btn-icone { 
-    background: none; 
-    border: none; 
-    font-size: 1.2rem; 
-    cursor: pointer; 
+.btn-icone {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
 }
