@@ -1,14 +1,13 @@
 /* ==========================================================================
-   ESTADO DA APLICAÇÃO E VARIÁVEIS DE CONTROLE
+   ESTADO GLOBAL DA APLICAÇÃO
    ========================================================================== */
 let tempoTotalSegundos = 0;
 let cronometroGeral = null;
-let perfilAtivo = 'adulto'; // 'adulto', 'pediatrico', 'neonato'
-let viaAereaAvançada = false;
+let perfilAtivo = 'adulto';
+let somMutado = false;
 
-/* Temporizadores e Contadores */
-let tempoUltimaAdrenalina = 0;
-let timerAdrenalina = null;
+let horaInicioStr = "";
+let horaTerminoStr = "";
 
 let contadores = {
     choque: 0,
@@ -16,210 +15,173 @@ let contadores = {
     amiodarona: 0
 };
 
+let historicoEventos = [];
+
 /* ==========================================================================
-   INICIALIZAÇÃO DE EVENTOS (ÚNICO DOMContentLoaded)
+   INICIALIZAÇÃO
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-    // Botão de início
-    const btnIniciar = document.getElementById('btn-iniciar');
-    if (btnIniciar) btnIniciar.addEventListener('click', iniciarAtendimento);
+    // Relógio de topo
+    setInterval(atualizarRelogioTopo, 1000);
 
-    // Botões de suporte
-    const btnIntubacao = document.getElementById('btn-intubacao');
-    if (btnIntubacao) btnIntubacao.addEventListener('click', toggleViaAereaAvançada);
+    document.getElementById('btn-iniciar').addEventListener('click', iniciarAtendimento);
+    document.getElementById('btn-mute').addEventListener('click', toggleMute);
 
-    // Botões de intervenção rápida
-    const btnAdrenalina = document.getElementById('btn-adrenalina');
-    const btnChoque = document.getElementById('btn-choque');
-    const btnAmiodarona = document.getElementById('btn-amiodarona');
-    const btnRce = document.getElementById('btn-rce');
+    // Intervenções
+    document.getElementById('btn-choque').addEventListener('click', registrarChoque);
+    document.getElementById('btn-adrenalina').addEventListener('click', registrarAdrenalina);
+    document.getElementById('btn-amiodarona').addEventListener('click', registrarAmiodarona);
+    document.getElementById('btn-checar-pulso').addEventListener('click', () => {
+        registrarEvento("Checagem de pulso realizada.");
+    });
 
-    if (btnAdrenalina) btnAdrenalina.addEventListener('click', registrarAdrenalina);
-    if (btnChoque) btnChoque.addEventListener('click', registrarChoque);
-    if (btnAmiodarona) btnAmiodarona.addEventListener('click', registrarAmiodarona);
-    if (btnRce) btnRce.addEventListener('click', registrarRCE);
+    // Controle de fluxo
+    document.getElementById('btn-rce').addEventListener('click', () => concluirAtendimento("ROSC"));
+    document.getElementById('btn-finalizar').addEventListener('click', () => concluirAtendimento("Finalizado"));
+    document.getElementById('btn-nova-pcr').addEventListener('click', resetarNovaPCR);
+    document.getElementById('btn-novo-atendimento').addEventListener('click', () => location.reload());
+    document.getElementById('btn-copiar').addEventListener('click', copiarResumoTextual);
 });
 
+function atualizarRelogioTopo() {
+    const agora = new Date();
+    document.getElementById('relogio-atual').textContent = agora.toLocaleTimeString('pt-BR');
+}
+
+function toggleMute() {
+    somMutado = !somMutado;
+    document.getElementById('btn-mute').textContent = somMutado ? "🔇" : "🔊";
+}
+
 /* ==========================================================================
-   FUNÇÕES DE FLUXO E CRONÔMETRO
+   FLUXO DE ATENDIMENTO
    ========================================================================== */
 function iniciarAtendimento() {
-    const radiosPerfil = document.getElementsByName('perfil-paciente');
-    for (const radio of radiosPerfil) {
-        if (radio.checked) {
-            perfilAtivo = radio.value;
-            break;
-        }
+    const radios = document.getElementsByName('perfil-paciente');
+    for (const r of radios) {
+        if (r.checked) perfilAtivo = r.value;
     }
 
+    horaInicioStr = new Date().toLocaleTimeString('pt-BR');
+    
     document.getElementById('tela-setup').style.display = 'none';
     document.getElementById('tela-atendimento').style.display = 'flex';
 
-    iniciarCronometroGeral();
+    iniciarCronometro();
     registrarEvento(`Atendimento iniciado. Perfil: ${perfilAtivo.toUpperCase()}`);
 }
 
-function iniciarCronometroGeral() {
-    const elementoRelogio = document.getElementById('cronometro-geral');
-    
+function iniciarCronometro() {
     cronometroGeral = setInterval(() => {
         tempoTotalSegundos++;
         
-        const horas = String(Math.floor(tempoTotalSegundos / 3600)).padStart(2, '0');
-        const minutos = String(Math.floor((tempoTotalSegundos % 3600) / 60)).padStart(2, '0');
-        const segundos = String(tempoTotalSegundos % 60).padStart(2, '0');
+        const h = String(Math.floor(tempoTotalSegundos / 3600)).padStart(2, '0');
+        const m = String(Math.floor((tempoTotalSegundos % 3600) / 60)).padStart(2, '0');
+        const s = String(tempoTotalSegundos % 60).padStart(2, '0');
 
-        elementoRelogio.textContent = `${horas}:${minutos}:${segundos}`;
+        document.getElementById('cronometro-geral').textContent = `${h}:${m}:${s}`;
 
-        // Alerta de 2 minutos para troca de socorrista / checar pulso
+        // Alerta de 2 minutos para checar pulso/ciclo
         if (tempoTotalSegundos > 0 && tempoTotalSegundos % 120 === 0) {
-            emitirAlertaGeral("2 minutos transcorridos: Checar pulso e ritmo! Trocar socorrista.");
+            emitirAlertaGeral("2 minutos. Checar pulso e trocar socorrista.");
         }
     }, 1000);
-}
-
-function toggleViaAereaAvançada(e) {
-    viaAereaAvançada = !viaAereaAvançada;
-    const botao = e.target;
-
-    if (viaAereaAvançada) {
-        botao.classList.add('btn-ativo');
-        registrarEvento("Via Aérea Avançada (IOT) instalada. Compressão contínua.");
-        emitirAlertaGeral("Via Aérea Avançada ativa. Ventilação 1 a cada 6 segundos.");
-    } else {
-        botao.classList.remove('btn-ativo');
-        registrarEvento("Retornado para Ventilação com Ambu/Máscara.");
-    }
 }
 
 /* ==========================================================================
-   LÓGICA DE INTERVENÇÕES (ADRENALINA, CHOQUE, AMIODARONA, RCE)
+   REGISTROS E ALERTAS ENXUTOS
    ========================================================================== */
 function registrarAdrenalina() {
     contadores.adrenalina++;
-    const elementoBotao = document.getElementById('btn-adrenalina');
-    elementoBotao.textContent = `💉 Adrenalina (${contadores.adrenalina})`;
+    document.getElementById('btn-adrenalina').textContent = `💉 Adrenalina (${contadores.adrenalina})`;
     
-    registrarEvento(`Adrenalina 1mg (EV/IO) administrada. [Dose nº ${contadores.adrenalina}]`);
-    emitirAlertaGeral(`Adrenalina dose ${contadores.adrenalina} registrada. Cronômetro de 3 minutos iniciado.`);
-
-    if (timerAdrenalina) clearInterval(timerAdrenalina);
-    tempoUltimaAdrenalina = 0;
-
-    timerAdrenalina = setInterval(() => {
-        tempoUltimaAdrenalina++;
-        if (tempoUltimaAdrenalina === 180) {
-            emitirAlertaGeral("Atenção: 3 minutos da última Adrenalina. Providenciar próxima dose.");
-        }
-    }, 1000);
+    registrarEvento(`Adrenalina 1mg administrada. Dose nº ${contadores.adrenalina}`);
+    emitirAlertaGeral("Adrenalina registrada.");
 }
 
 function registrarChoque() {
     contadores.choque++;
-    const elementoBotao = document.getElementById('btn-choque');
-    elementoBotao.textContent = `⚡ Choque (${contadores.choque})`;
+    document.getElementById('btn-choque').textContent = `⚡ Choque (${contadores.choque})`;
 
-    const btnDea = document.getElementById('btn-dea');
-    const dispositivo = (btnDea && btnDea.classList.contains('btn-ativo')) ? "DEA" : "Desfibrilador Manual";
+    // Zera o contador visual do ciclo de 2 min
+    tempoTotalSegundos = 0;
 
-    registrarEvento(`Choque nº ${contadores.choque} aplicado via ${dispositivo}.`);
-    
-    let mensagemVoz = `Choque ${contadores.choque} registrado. Reiniciar compressões imediatamente!`;
-
-    // Regras de Amiodarona conforme quantidade de choques
-    if (contadores.choque === 2 && contadores.amiodarona === 0) {
-        mensagemVoz += " Considerar primeira dose de Amiodarona.";
-        if (perfilAtivo === 'pediatrico' || perfilAtivo === 'neonato') {
-            mensagemVoz += " Atenção paciente infantil: checar dose de Amiodarona, 5 miligramas por quilo.";
-        }
-    } else if (contadores.choque >= 3 && contadores.amiodarona === 1) {
-        mensagemVoz += " Considerar segunda dose de Amiodarona.";
-        if (perfilAtivo === 'pediatrico' || perfilAtivo === 'neonato') {
-            mensagemVoz += " Checar dose infantil: 5 miligramas por quilo.";
-        }
-    } else if (contadores.amiodarona >= 2) {
-        mensagemVoz += " Manter foco nas compressões e ciclo de Adrenalina.";
-    }
-
-    emitirAlertaGeral(mensagemVoz);
+    registrarEvento(`Choque nº ${contadores.choque} aplicado.`);
+    emitirAlertaGeral("Choque registrado.");
 }
 
 function registrarAmiodarona() {
     contadores.amiodarona++;
-    const elementoBotao = document.getElementById('btn-amiodarona');
-    
-    let textoDose = (perfilAtivo === 'adulto') ? (contadores.amiodarona === 1 ? "300mg" : "150mg") : "5mg/kg";
-    elementoBotao.textContent = `💊 Amiodarona (${contadores.amiodarona})`;
+    document.getElementById('btn-amiodarona').textContent = `💊 Amiodarona (${contadores.amiodarona})`;
 
-    registrarEvento(`Amiodarona (${textoDose}) administrada. [Dose nº ${contadores.amiodarona}]`);
-    
-    if (perfilAtivo === 'adulto') {
-        emitirAlertaGeral(`Amiodarona dose ${contadores.amiodarona} registrada: ${textoDose}.`);
-    } else {
-        emitirAlertaGeral(`Amiodarona infantil registrada. Confirmar dose de 5 miligramas por quilo.`);
-    }
-
-    if (contadores.amiodarona >= 2) {
-        elementoBotao.disabled = true;
-        elementoBotao.style.opacity = "0.5";
-    }
+    const textoDose = contadores.amiodarona === 1 ? "1ª dose" : "2ª dose";
+    registrarEvento(`Amiodarona ${textoDose} administrada.`);
+    emitirAlertaGeral(`Amiodarona ${textoDose} registrada.`);
 }
 
-function registrarRCE() {
-    clearInterval(cronometroGeral);
-    if (timerAdrenalina) clearInterval(timerAdrenalina);
-
-    registrarEvento("🟢 RETORNO DA CIRCULAÇÃO ESPONTÂNEA (RCE) CONFIRMADO!");
-    emitirAlertaGeral("Retorno da circulação espontânea confirmado. Parando cronômetros e gerando relatório.");
-
-    document.getElementById('tela-atendimento').style.display = 'none';
-    document.getElementById('tela-resumo').style.display = 'block';
-
-    gerarRelatorioFinal();
+function resetarNovaPCR() {
+    // Zera cronômetro sem apagar a linha do tempo
+    tempoTotalSegundos = 0;
+    registrarEvento("⚠️ Nova PCR identificada. Cronômetro reiniciado.");
+    emitirAlertaGeral("Nova PCR. Cronômetro zerado.");
 }
 
 /* ==========================================================================
-   UTILITÁRIOS DE REGISTRO E VOZ
+   GERAÇÃO DA LINHA DO TEMPO E RESUMO
    ========================================================================== */
 function registrarEvento(descricao) {
-    const lista = document.getElementById('lista-eventos');
-    if (!lista) return;
+    const hora = new Date().toLocaleTimeString('pt-BR');
+    const evento = { hora, descricao };
+    historicoEventos.unshift(evento);
 
-    const agora = new Date();
-    const horaFormatada = agora.toLocaleTimeString('pt-BR');
-    
+    const lista = document.getElementById('lista-eventos-atendimento');
     const item = document.createElement('li');
-    item.textContent = `[${horaFormatada}] ${descricao}`;
+    item.innerHTML = `<span>${descricao}</span> <small style="color: #64748b;">${hora}</small>`;
     lista.prepend(item);
 }
 
 function emitirAlertaGeral(mensagem) {
-    if ('speechSynthesis' in window) {
+    if (!somMutado && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Cancela falas anteriores
         const fala = new SpeechSynthesisUtterance(mensagem);
         fala.lang = 'pt-BR';
         window.speechSynthesis.speak(fala);
     }
-    registrarEvento(`ALERTA SONORO: ${mensagem}`);
 }
 
-function gerarRelatorioFinal() {
-    const campoTexto = document.getElementById('texto-evolucao');
-    if (!campoTexto) return;
+function concluirAtendimento(motivo) {
+    clearInterval(cronometroGeral);
+    horaTerminoStr = new Date().toLocaleTimeString('pt-BR');
 
-    const lista = document.getElementById('lista-eventos');
-    const itens = Array.from(lista.querySelectorAll('li')).reverse();
+    document.getElementById('tela-atendimento').style.display = 'none';
+    document.getElementById('tela-resumo').style.display = 'flex';
 
-    let relatorio = `=== RELATÓRIO DE ATENDIMENTO DE PCR ===\n`;
-    relatorio += `Perfil: ${perfilAtivo.toUpperCase()}\n`;
-    relatorio += `Tempo Total de Manobras: ${document.getElementById('cronometro-geral').textContent}\n`;
-    relatorio += `Total de Choques: ${contadores.choque}\n`;
-    relatorio += `Total de Adrenalina: ${contadores.adrenalina} mg\n`;
-    relatorio += `Total de Amiodarona: ${contadores.amiodarona} dose(s)\n\n`;
-    relatorio += `--- LINHA DO TEMPO DETALHADA ---\n`;
+    document.getElementById('subtitulo-resumo').textContent = `Atendimento finalizado com ${motivo}`;
+    document.getElementById('resumo-inicio').textContent = horaInicioStr;
+    document.getElementById('resumo-termino').textContent = horaTerminoStr;
+    document.getElementById('resumo-duracao').textContent = document.getElementById('cronometro-geral').textContent;
 
-    itens.forEach(item => {
-        relatorio += `${item.textContent}\n`;
+    const listaResumo = document.getElementById('lista-eventos-resumo');
+    listaResumo.innerHTML = "";
+
+    // Renderiza a linha do tempo sem colchetes/chaves (estilo Imagem 3)
+    historicoEventos.slice().reverse().forEach(ev => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${ev.descricao}</span> <span style="color: #64748b;">${ev.hora}</span>`;
+        listaResumo.appendChild(li);
+    });
+}
+
+function copiarResumoTextual() {
+    let texto = `=== RESUMO DE ATENDIMENTO DE PCR ===\n`;
+    texto += `Início: ${horaInicioStr} | Término: ${horaTerminoStr}\n`;
+    texto += `Duração: ${document.getElementById('resumo-duracao').textContent}\n\n`;
+    texto += `LINHA DO TEMPO:\n`;
+
+    historicoEventos.slice().reverse().forEach(ev => {
+        texto += `• ${ev.descricao} - ${ev.hora}\n`;
     });
 
-    campoTexto.value = relatorio;
+    navigator.clipboard.writeText(texto);
+    alert("Resumo copiado para a área de transferência!");
 }
