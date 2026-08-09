@@ -45,6 +45,16 @@ body {
   font-weight: 600;
   font-size: 0.95rem;
 }
+/* Destaque para o card de perfil selecionado */
+.card-perfil.selecionado {
+  border: 2px solid #38bdf8;
+  background-color: #1e293b;
+}
+
+.card-perfil.selecionado .check-icon {
+  display: inline-block;
+  color: #38bdf8;
+}
 
 /* Luz de Status Pulso */
 .status-light {
