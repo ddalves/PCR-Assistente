@@ -9,6 +9,10 @@ let tempoSegundos = 0;
 let bipAtivo = true;
 let somMasterAtivo = true;
 
+// Estado dos Equipamentos Conectados
+let deaConectado = false;
+let monitorConectado = false;
+
 let contadores = {
     Choque: 0,
     Adrenalina: 0,
@@ -21,10 +25,10 @@ let eventosLinhaTempo = [];
 function falar(texto) {
     if (!somMasterAtivo) return;
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Cancela falas anteriores
+        window.speechSynthesis.cancel(); // Cancela falas em andamento
         const utterance = new SpeechSynthesisUtterance(texto);
         utterance.lang = 'pt-BR';
-        utterance.rate = 1.1; // Velocidade ligeiramente rápida
+        utterance.rate = 1.1; // Velocidade ligeiramente rápida para emergência
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -72,31 +76,53 @@ function iniciarPCR() {
     tempoInicio = new Date();
     tempoSegundos = 0;
     eventosLinhaTempo = [];
+    deaConectado = false;
+    monitorConectado = false;
     contadores = { Choque: 0, Adrenalina: 0, Amiodarona: 0 };
     atualizarContadoresUI();
 
     alternarTela('tela-atendimento');
     
-    // Voz de comando
+    // Comando vocal inicial
     falar("Iniciar compressão");
 
     // Evento Inicial na Linha do Tempo
     registrarEvento(`Atendimento iniciado. Perfil: ${perfilSelecionado}`);
 
-    // Timers
+    // Cronômetro Principal
     timerGeral = setInterval(() => {
         tempoSegundos++;
         document.getElementById('cronometro-geral').textContent = formatarTempo(tempoSegundos);
+
+        // ALERTA DE CICLO DE 2 MINUTOS (120 SEGUNDOS)
+        if (tempoSegundos > 0 && tempoSegundos % 120 === 0) {
+            dispararAlertaDoisMinutos();
+        }
     }, 1000);
 
     iniciarMetronomo();
+}
+
+// ALERTA VOCAL DE 2 MINUTOS
+function dispararAlertaDoisMinutos() {
+    let mensagemAlerta = "Atenção: dois minutos decorridos. Trocar socorrista. ";
+
+    if (monitorConectado) {
+        mensagemAlerta += "Reavaliar ritmo no monitor e checar pulso.";
+    } else if (deaConectado) {
+        mensagemAlerta += "Reavaliar ritmo no DEA.";
+    } else {
+        mensagemAlerta += "Reavaliar paciente.";
+    }
+
+    falar(mensagemAlerta);
+    registrarEvento(`⚠️ ALERTA 2 MIN: Ciclo concluído. Troca de socorrista / Reavaliação.`);
 }
 
 // METRÔNOMO (BIP + LUZ)
 function iniciarMetronomo() {
     if (timerBipRitmo) clearInterval(timerBipRitmo);
     
-    // Audio Context para emissão do Bip
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     
     // Intervalo de ~110 BPM (545ms)
@@ -114,7 +140,7 @@ function iniciarMetronomo() {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // Tom do Bip
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
@@ -136,14 +162,25 @@ function toggleSomMaster() {
     document.getElementById('btn-som-master').textContent = somMasterAtivo ? "🔊" : "🔇";
 }
 
-// AÇÃO DE VENTILAÇÃO
+// AÇÃO DE VENTILAÇÃO DIFERENCIADA POR PERFIL
 function acaoVentilacao() {
-    falar("Iniciar 30 por 2");
-    registrarAcao("Ventilação iniciada (30:2 / Válvula-Máscara)");
+    if (perfilSelecionado === 'CRIANCA' || perfilSelecionado === 'BEBE') {
+        falar("Iniciar 15 por 2");
+        registrarAcao("Ventilação iniciada (15:2 / Válvula-Máscara)");
+    } else {
+        falar("Iniciar 30 por 2");
+        registrarAcao("Ventilação iniciada (30:2 / Válvula-Máscara)");
+    }
 }
 
-// REGISTRO DE EVENTOS
+// REGISTRO DE EVENTOS E SUPORTE
 function registrarAcao(descricao) {
+    if (descricao.includes('DEA')) {
+        deaConectado = true;
+    }
+    if (descricao.includes('Monitor')) {
+        monitorConectado = true;
+    }
     registrarEvento(descricao);
 }
 
@@ -177,11 +214,10 @@ function atualizarLinhaTempoUI() {
     const feed = document.getElementById('feed-linha-tempo');
     feed.innerHTML = '';
 
-    // Mostra os mais recentes no topo
     [...eventosLinhaTempo].reverse().forEach(ev => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <span><strong>${ev.descricao}</strong> <small style="color:#94a3b8">(Parada: ${ev.tempoParada})</small></span>
+            <span><strong>${ev.descricao}</strong> <small style="color:#94a3b8">(Tempo PCR: ${ev.tempoParada})</small></span>
             <span class="hora-feed">${ev.hora}</span>
         `;
         feed.appendChild(li);
@@ -201,7 +237,6 @@ function finalizarAtendimento(status) {
     document.getElementById('resumo-termino').textContent = tempoTermino.toLocaleTimeString('pt-BR');
     document.getElementById('resumo-duracao').textContent = formatarTempo(tempoSegundos);
 
-    // Atualiza Timeline Completa (Ordem Cronológica)
     const feedResumo = document.getElementById('feed-resumo-completo');
     feedResumo.innerHTML = '';
     
