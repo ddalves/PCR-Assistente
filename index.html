@@ -1,21 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registro de PCR / RCE</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Suporte PCR</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- TELA DE ATENDIMENTO -->
-  <div id="mainScreen" class="app-container">
+    <!-- TELA 1: SELEÇÃO DE PERFIL E INÍCIO -->
+    <div id="tela-setup" class="tela ativa">
+        <div class="container-setup">
+            <span class="subtitulo-topo">APOIO AO ATENDIMENTO</span>
+            <h1 class="titulo-principal">Assistente de PCR</h1>
+            <p class="alerta-uso">Cronômetro, lembretes por voz e registro de horários. Nada é salvo — o resumo só sai daqui se você enviar.</p>
+
+            <p class="instrucao-selecao"><strong>Selecione o perfil do paciente:</strong></p>
+
+            <div class="opcoes-perfil">
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'ADULTO')">
+                    <div class="perfil-info">
+                        <strong>Adulto</strong>
+                        <span>Compressão 30:2 até via aérea avançada</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'CRIANCA')">
+                    <div class="perfil-info">
+                        <strong>Criança</strong>
+                        <span>Compressão 15:2 com 2 socorristas</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+
+                <button class="card-perfil" onclick="selecionarPerfil(this, 'BEBE')">
+                    <div class="perfil-info">
+                        <strong>Bebê</strong>
+                        <span>Compressão 15:2 com 2 socorristas</span>
+                    </div>
+                    <span class="check-icon">✓</span>
+                </button>
+            </div>
+
+            <!-- Inicia desativado por padrão -->
+            <button id="btn-iniciar-pcr" class="btn-iniciar" disabled onclick="iniciarPCR()">SELECIONE UM PERFIL</button>
+
+            <p class="rodape-instrucao">Toque nos botões grandes durante o atendimento para marcar cada ação com o horário exato. Ferramenta de apoio — não substitui o protocolo da sua instituição.</p>
+        </div>
+    </div>
+
+  <!-- TELA 2: ATENDIMENTO (INICIA OCULTA) -->
+  <div id="mainScreen" class="app-container hidden">
     
-    <!-- Cabeçalho com Luz do Ritmo e Cronômetro -->
+    <!-- Cabeçalho com Luz do Ritmo, Perfil e Cronômetro -->
     <header class="pcr-header">
       <div class="status-container">
         <span class="status-light pulse-red" id="statusIndicator"></span>
-        <span class="status-text">PCR em andamento</span>
+        <div class="header-info">
+          <span class="status-text">PCR em andamento</span>
+          <span class="profile-badge" id="selectedProfileBadge">--</span>
+        </div>
       </div>
       <div class="timer-display" id="mainTimer">00:00:00</div>
     </header>
@@ -45,12 +90,15 @@
 
   </div>
 
-  <!-- TELA DE RELATÓRIO FINAL -->
+  <!-- TELA 3: RELATÓRIO FINAL -->
   <div id="reportScreen" class="app-container hidden">
     <h2>Relatório de Atendimento</h2>
 
-    <!-- Resumo dos Tempos (Sem Status de Óbito) -->
+    <!-- Resumo dos Tempos e Perfil -->
     <div class="summary-card">
+      <div class="profile-info-card">
+        <strong>Perfil:</strong> <span id="reportProfileDisplay">--</span>
+      </div>
       <div class="time-info">
         <span><strong>Início:</strong> <span id="startTimeDisplay">--:--</span></span>
         <span class="separator">|</span>
