@@ -10,41 +10,48 @@
 
     <div class="container-tela">
 
-        <!-- TELA 1: SELEÇÃO DE PERFIL -->
-        <div id="tela-setup" class="tela ativa">
-            <div class="header-setup">
-                <h1>PCR ASSISTENTE</h1>
-                <p class="subtitulo-topo">SELEÇÃO DE PERFIL</p>
+       <!-- TELA 1: SELEÇÃO DE PERFIL -->
+<div id="tela-setup" class="tela ativa">
+    <div class="header-setup">
+        <h1>PCR ASSISTENTE</h1>
+        <p class="subtitulo-topo">SELEÇÃO DE PERFIL</p>
+    </div>
+
+    <div class="perfis-lista">
+        <label class="btn-card-perfil btn-perfil-adulto">
+            <input type="radio" name="perfil-paciente" value="ADULTO" checked>
+            <div class="icone-perfil">
+                <img src="img/adulto.png" alt="Perfil Adulto">
             </div>
-
-            <div class="perfis-lista">
-                <label class="btn-card-perfil btn-perfil-adulto">
-                    <input type="radio" name="perfil-paciente" value="ADULTO" checked>
-                    <div class="icone-perfil">👤</div>
-                    <div class="texto-perfil">
-                        <span class="titulo-perfil">ADULTO</span>
-                        <span class="subtitulo-perfil">A partir da puberdade. Compressão 30:2</span>
-                    </div>
-                </label>
-
-                <label class="btn-card-perfil btn-perfil-crianca">
-                    <input type="radio" name="perfil-paciente" value="CRIANCA">
-                    <div class="icone-perfil">🧒</div>
-                    <div class="texto-perfil">
-                        <span class="titulo-perfil">CRIANÇA</span>
-                        <span class="subtitulo-perfil">De 1 ano até puberdade. Compressão 15:2</span>
-                    </div>
-                </label>
-
-                <label class="btn-card-perfil btn-perfil-bebe">
-                    <input type="radio" name="perfil-paciente" value="BEBE">
-                    <div class="icone-perfil">👶</div>
-                    <div class="texto-perfil">
-                        <span class="titulo-perfil">BEBÊ</span>
-                        <span class="subtitulo-perfil">Menor de 1 ano. Compressão 15:2</span>
-                    </div>
-                </label>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">ADULTO</span>
+                <span class="subtitulo-perfil">A partir da puberdade. Compressão 30:2</span>
             </div>
+        </label>
+
+        <label class="btn-card-perfil btn-perfil-crianca">
+            <input type="radio" name="perfil-paciente" value="CRIANCA">
+            <div class="icone-perfil">
+                <img src="img/crianca.png" alt="Perfil Criança">
+            </div>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">CRIANÇA</span>
+                <span class="subtitulo-perfil">De 1 ano até puberdade. Compressão 15:2</span>
+            </div>
+        </label>
+
+        <label class="btn-card-perfil btn-perfil-bebe">
+            <input type="radio" name="perfil-paciente" value="BEBE">
+            <div class="icone-perfil">
+                <img src="img/bebe.png" alt="Perfil Bebê">
+            </div>
+            <div class="texto-perfil">
+                <span class="titulo-perfil">BEBÊ</span>
+                <span class="subtitulo-perfil">Menor de 1 ano. Compressão 15:2</span>
+            </div>
+        </label>
+    </div>
+</div>
 
             <button id="btn-iniciar-atendimento" class="btn-iniciar-pcr">INICIAR PCR</button>
         </div>
@@ -78,7 +85,11 @@
                 <div class="grid-botoes-suporte">
                     <button class="btn-suporte" onclick="registrarAcao('DEA / Desfibrilador conectado')">⚡ DEA</button>
                     <button class="btn-suporte" onclick="registrarAcao('Acesso EV/IO estabelecido')">💉 Acesso EV/IO</button>
-                    <button class="btn-suporte" onclick="acaoVentilacao()">🫁 Ventilação</button>
+                    <button onclick="acaoVentilacao()" class="btn-acao btn-ventilacao">
+                    <button class="btn-suporte btn-ventilacao" onclick="acaoVentilacao()">
+    <img src="img/ambu.png" alt="Ambu" class="icone-btn-ambu" />
+    <span>Ventilação</span>
+</button>
                     <button class="btn-suporte" onclick="registrarAcao('Intubação / Via Aérea Avançada')">🩺 Intubação</button>
                     <button class="btn-suporte" onclick="registrarAcao('Monitor Cardíaco instalado')">🖥️ Monitor</button>
                 </div>

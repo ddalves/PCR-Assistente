@@ -55,11 +55,15 @@ function formatarTempo(segundosTotais) {
     const hrs = Math.floor(segundosTotais / 3600).toString().padStart(2, '0');
     const mins = Math.floor((segundosTotais % 3600) / 60).toString().padStart(2, '0');
     const segs = (segundosTotais % 60).toString().padStart(2, '0');
-    return `${hrs}:${mins}:${segs}`;
+    
+    // Retorna HH:MM:SS se durar mais de 1 hora, ou MM:SS para atendimentos normais
+    return hrs > 0 ? `${hrs}:${mins}:${segs}` : `${mins}:${segs}`;
 }
 
 function obterHoraAtual() {
-    return new Date().toLocaleTimeString('pt-BR');
+    const agora = new Date();
+    // Retorna no formato HH:MM (ex: 12:01)
+    return agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 
 // CONTROLADOR DE NAVEGAÇÃO
@@ -87,7 +91,7 @@ function iniciarPCR() {
     falar("Iniciar compressão");
 
     // Evento Inicial na Linha do Tempo
-    registrarEvento(`Atendimento iniciado. Perfil: ${perfilSelecionado}`);
+    registrarEvento(`Atendimento iniciado (${perfilSelecionado})`);
 
     // Cronômetro Principal
     timerGeral = setInterval(() => {
@@ -116,7 +120,7 @@ function dispararAlertaDoisMinutos() {
     }
 
     falar(mensagemAlerta);
-    registrarEvento(`⚠️ ALERTA 2 MIN: Ciclo concluído. Troca de socorrista / Reavaliação.`);
+    registrarEvento(`⚠️ Ciclo 2 min concluído - Troca de socorrista`);
 }
 
 // METRÔNOMO (BIP + LUZ)
@@ -166,10 +170,10 @@ function toggleSomMaster() {
 function acaoVentilacao() {
     if (perfilSelecionado === 'CRIANCA' || perfilSelecionado === 'BEBE') {
         falar("Iniciar 15 por 2");
-        registrarAcao("Ventilação iniciada (15:2 / Válvula-Máscara)");
+        registrarAcao("Ventilação iniciada (15:2)");
     } else {
         falar("Iniciar 30 por 2");
-        registrarAcao("Ventilação iniciada (30:2 / Válvula-Máscara)");
+        registrarAcao("Ventilação iniciada (30:2)");
     }
 }
 
@@ -187,7 +191,7 @@ function registrarAcao(descricao) {
 function registrarMedicacao(tipo) {
     contadores[tipo]++;
     atualizarContadoresUI();
-    registrarEvento(`${tipo} administrado (${contadores[tipo]}ª dose)`);
+    registrarEvento(`${tipo} (${contadores[tipo]}ª dose)`);
 }
 
 function atualizarContadoresUI() {
@@ -210,6 +214,7 @@ function registrarEvento(descricao) {
     atualizarLinhaTempoUI();
 }
 
+// ATUALIZA A LINHA DO TEMPO EM TEMPO REAL (• HH:MM - Evento - MM:SS)
 function atualizarLinhaTempoUI() {
     const feed = document.getElementById('feed-linha-tempo');
     feed.innerHTML = '';
@@ -217,8 +222,12 @@ function atualizarLinhaTempoUI() {
     [...eventosLinhaTempo].reverse().forEach(ev => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <span><strong>${ev.descricao}</strong> <small style="color:#94a3b8">(Tempo PCR: ${ev.tempoParada})</small></span>
-            <span class="hora-feed">${ev.hora}</span>
+            <span>
+                <span class="ponto-bullet">•</span> 
+                <span class="hora-feed">${ev.hora}</span> - 
+                <strong class="texto-evento">${ev.descricao}</strong> - 
+                <span class="tempo-decorrido">${ev.tempoParada}</span>
+            </span>
         `;
         feed.appendChild(li);
     });
@@ -230,11 +239,11 @@ function finalizarAtendimento(status) {
     clearInterval(timerGeral);
     if (timerBipRitmo) clearInterval(timerBipRitmo);
 
-    registrarEvento(`Atendimento finalizado com status: ${status}`);
+    registrarEvento(`Atendimento finalizado: ${status}`);
 
     document.getElementById('resumo-status').textContent = `Finalizado com ${status}`;
-    document.getElementById('resumo-inicio').textContent = tempoInicio.toLocaleTimeString('pt-BR');
-    document.getElementById('resumo-termino').textContent = tempoTermino.toLocaleTimeString('pt-BR');
+    document.getElementById('resumo-inicio').textContent = tempoInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('resumo-termino').textContent = tempoTermino.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('resumo-duracao').textContent = formatarTempo(tempoSegundos);
 
     const feedResumo = document.getElementById('feed-resumo-completo');
@@ -243,8 +252,12 @@ function finalizarAtendimento(status) {
     eventosLinhaTempo.forEach(ev => {
         const li = document.createElement('li');
         li.innerHTML = `
-            <span>${ev.descricao} <em>(Tempo PCR: ${ev.tempoParada})</em></span>
-            <strong>${ev.hora}</strong>
+            <span>
+                <span class="ponto-bullet">•</span> 
+                <span class="hora-feed">${ev.hora}</span> - 
+                <strong>${ev.descricao}</strong> - 
+                <span class="tempo-decorrido">${ev.tempoParada}</span>
+            </span>
         `;
         feedResumo.appendChild(li);
     });
@@ -268,13 +281,13 @@ function novoAtendimento() {
 function gerarTextoResumo() {
     let texto = `=== RESUMO DE ATENDIMENTO PCR ===\n`;
     texto += `Perfil: ${perfilSelecionado}\n`;
-    texto += `Início: ${tempoInicio.toLocaleTimeString('pt-BR')}\n`;
-    texto += `Término: ${tempoTermino.toLocaleTimeString('pt-BR')}\n`;
+    texto += `Início: ${tempoInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`;
+    texto += `Término: ${tempoTermino.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}\n`;
     texto += `Duração Total: ${formatarTempo(tempoSegundos)}\n\n`;
     texto += `--- LINHA DO TEMPO ---\n`;
 
     eventosLinhaTempo.forEach(ev => {
-        texto += `[${ev.hora}] (Tempo PCR: ${ev.tempoParada}) - ${ev.descricao}\n`;
+        texto += `• ${ev.hora} - ${ev.descricao} - ${ev.tempoParada}\n`;
     });
 
     return texto;

@@ -71,11 +71,26 @@ body {
     border: 3px solid transparent;
 }
 
-.btn-card-perfil input { display: none; }
+.btn-card-perfil input { 
+    display: none; 
+}
 
+/* Ajuste dos ícones de perfil (imagens) */
 .icone-perfil {
-    font-size: 2.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-right: 15px;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+}
+
+.icone-perfil img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
 }
 
 .titulo-perfil {
@@ -210,6 +225,25 @@ body {
     font-weight: 600;
     font-size: 0.85rem;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Ajustes específicos do botão e ícone do Ambu */
+.btn-ventilacao {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.icone-btn-ambu {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    display: block;
 }
 
 .btn-intervencao {
