@@ -1,4 +1,3 @@
-// Estado Global do Atendimento
 let state = {
   profile: null,
   running: false,
@@ -11,20 +10,16 @@ let state = {
   amiodarona150Timestamp: null
 };
 
-// --- TELA 1: LÓGICA DE SELEÇÃO E INÍCIO ---
-
+// --- TELA 1: SELEÇÃO DE PERFIL ---
 function selecionarPerfil(element, perfil) {
   state.profile = perfil;
 
-  // Remove destaque dos outros cards
   document.querySelectorAll('.card-perfil').forEach(card => {
     card.classList.remove('selecionado');
   });
 
-  // Destaca o card selecionado
   element.classList.add('selecionado');
 
-  // Habilita o botão de iniciar
   const btnIniciar = document.getElementById('btn-iniciar-pcr');
   btnIniciar.disabled = false;
   btnIniciar.innerText = `INICIAR ATENDIMENTO (${perfil})`;
@@ -33,19 +28,15 @@ function selecionarPerfil(element, perfil) {
 function iniciarPCR() {
   if (!state.profile) return;
 
-  // Atualiza badge de perfil
   document.getElementById('selectedProfileBadge').innerText = `PACIENTE ${state.profile}`;
 
-  // Transição de tela: Oculta Tela 1, Exibe Tela 2
-  document.getElementById('tela-setup').classList.remove('ativa');
   document.getElementById('tela-setup').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
 
   startSession();
 }
 
-// --- TELA 2: ATENDIMENTO E CRONÔMETRO ---
-
+// --- TELA 2: TEMPO REAL ---
 function formatHHMMSS(seconds) {
   const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
   const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
@@ -93,7 +84,7 @@ function renderLiveLog(item) {
   list.insertBefore(li, list.firstChild);
 }
 
-// Regras de Medicação (Amiodarona e Adrenalina)
+// Regras de Amiodarona e Adrenalina
 function handleAmiodarona() {
   if (state.amiodaronaDoses === 0) {
     state.amiodaronaDoses = 1;
@@ -117,8 +108,7 @@ function checkMedicationRules() {
   if (state.amiodaronaDoses === 2 && state.amiodarona150Timestamp) {
     const elapsedSince150mg = state.totalSeconds - state.amiodarona150Timestamp;
 
-    // Dispara o alerta após 3 min (180 seg) da 2ª dose de Amiodarona
-    if (elapsedSince150mg >= 180) {
+    if (elapsedSince150mg >= 180) { // 3 minutos após a 2ª dose
       showAlert("⚠️ Aplicar Adrenalina (3 min após a 2ª dose de Amiodarona)");
     }
   }
@@ -134,8 +124,7 @@ function hideAlert() {
   document.getElementById('medAlertBox').classList.add('hidden');
 }
 
-// --- TELA 3: RCE E RELATÓRIO FINAL ---
-
+// --- TELA 3: RCE E EXPORTAÇÃO ---
 function finishRCE() {
   state.running = false;
   clearInterval(state.timerInterval);

@@ -3,17 +3,19 @@
   margin: 0;
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background-color: #0f172a;
-  color: #f8fafc;
+  background-color: #0b132b;
+  color: #f1f5f9;
   display: flex;
   justify-content: center;
   padding: 16px;
+  min-height: 100vh;
 }
 
-.app-container {
+.tela-container {
   width: 100%;
   max-width: 480px;
   display: flex;
@@ -25,15 +27,135 @@ body {
   display: none !important;
 }
 
-/* Cabeçalho */
-.pcr-header {
-  background-color: #1e293b;
+/* --- TELA SETUP / SELEÇÃO --- */
+.header-setup {
+  margin-top: 8px;
+}
+
+.subtitulo-topo {
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  color: #38bdf8;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.titulo-principal {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin: 4px 0 8px 0;
+  color: #ffffff;
+}
+
+.alerta-uso {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.secao-selecao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.instrucao-selecao {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+}
+
+.opcoes-perfil {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Estilo padronizado dos Cards de Perfil */
+.card-perfil {
+  background-color: #1c2541;
+  border: 1px solid #3a506b;
   border-radius: 12px;
   padding: 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #334155;
+  text-align: left;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-perfil:active {
+  transform: scale(0.98);
+}
+
+.card-perfil.selecionado {
+  border: 2px solid #38bdf8;
+  background-color: #1e293b;
+}
+
+.perfil-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.perfil-info strong {
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.perfil-info span {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.check-icon {
+  font-size: 1.2rem;
+  color: #38bdf8;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.card-perfil.selecionado .check-icon {
+  opacity: 1;
+}
+
+.btn-iniciar {
+  width: 100%;
+  padding: 16px;
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btn-iniciar:disabled {
+  background-color: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.rodape-instrucao {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.4;
+  margin-top: 8px;
+}
+
+/* --- TELA DE ATENDIMENTO --- */
+.pcr-header {
+  background-color: #1c2541;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid #3a506b;
 }
 
 .status-container {
@@ -41,28 +163,29 @@ body {
   align-items: center;
 }
 
+.header-info {
+  display: flex;
+  flex-direction: column;
+}
+
 .status-text {
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-/* Destaque para o card de perfil selecionado */
-.card-perfil.selecionado {
-  border: 2px solid #38bdf8;
-  background-color: #1e293b;
+  font-weight: 700;
+  font-size: 0.9rem;
 }
 
-.card-perfil.selecionado .check-icon {
-  display: inline-block;
+.profile-badge {
+  font-size: 0.75rem;
   color: #38bdf8;
+  font-weight: 600;
 }
 
-/* Luz de Status Pulso */
 .status-light {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  margin-right: 8px;
+  margin-right: 12px;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .pulse-red {
@@ -79,12 +202,11 @@ body {
 
 .timer-display {
   font-family: monospace;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: bold;
   color: #38bdf8;
 }
 
-/* Alertas de Medicação */
 .alert-box {
   background-color: #b91c1c;
   color: #ffffff;
@@ -92,47 +214,70 @@ body {
   border-radius: 8px;
   text-align: center;
   font-weight: bold;
-  animation: bounce 0.5s infinite alternate;
 }
 
-/* Botoes */
 .controls-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .btn {
-  padding: 14px;
+  padding: 18px 16px;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .btn-action {
-  background-color: #334155;
+  background-color: #1c2541;
   color: #ffffff;
+  border: 1px solid #3a506b;
   text-align: left;
+}
+
+.btn-action:active {
+  background-color: #3a506b;
 }
 
 .btn-rce {
   background-color: #16a34a;
   color: #ffffff;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
-.btn-primary { background-color: #2563eb; color: #fff; width: 100%; }
-.btn-success { background-color: #16a34a; color: #fff; width: 100%; }
-.btn-secondary { background-color: #475569; color: #fff; width: 100%; }
+.live-timeline h3 {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
 
-/* Relatório */
+ul {
+  list-style: none;
+}
+
+li {
+  padding: 8px 0;
+  border-bottom: 1px solid #1e293b;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+}
+
+/* --- RELATÓRIO --- */
 .summary-card {
-  background-color: #1e293b;
+  background-color: #1c2541;
   border-radius: 12px;
   padding: 16px;
   text-align: center;
+  border: 1px solid #3a506b;
+}
+
+.profile-info-card {
+  font-size: 1rem;
+  color: #cbd5e1;
+  margin-bottom: 8px;
 }
 
 .time-info {
@@ -145,32 +290,26 @@ body {
 }
 
 .duration-info {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: #38bdf8;
+  font-weight: bold;
 }
 
 .timeline-box {
   background-color: #020617;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 12px;
-  max-height: 300px;
+  max-height: 280px;
   overflow-y: auto;
   border: 1px solid #1e293b;
-}
-
-ul {
-  list-style: none;
-}
-
-li {
-  padding: 6px 0;
-  border-bottom: 1px solid #1e293b;
-  font-size: 0.9rem;
 }
 
 .action-buttons {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 12px;
 }
+
+.btn-primary { background-color: #2563eb; color: #fff; width: 100%; }
+.btn-success { background-color: #16a34a; color: #fff; width: 100%; }
+.btn-secondary { background-color: #475569; color: #fff; width: 100%; }
