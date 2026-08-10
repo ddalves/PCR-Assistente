@@ -39,26 +39,29 @@ function unlockAudioEngine() {
   }
 }
 
-// Agenda o bip na linha do tempo exata da placa de som
+// Agenda o bip seco e agudo (estilo metrônomo médico)
 function scheduleBeep(time) {
-  if (!state.beatActive || !state.running) return;
+  if (!state.running) return;
 
   try {
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, time); // Frequência do Bip (880 Hz - Nota Lá)
+    osc.type = 'sine'; // Onda senoidal pura
+    osc.frequency.setValueAtTime(2200, time); // 2.200 Hz (Agudo/Alertante)
 
-    // Envelope de volume para evitar 'estalos' no áudio
-    gain.gain.setValueAtTime(0.3, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+    // Volume mais alto e ataque instantâneo (Sem reverberação)
+    gain.gain.setValueAtTime(0.7, time); // Volume aumentado (0.7)
+    
+    // Corte seco aos 100 ms (~0.1s) sem rabo de som
+    gain.gain.setValueAtTime(0.7, time + 0.09);
+    gain.gain.linearRampToValueAtTime(0.001, time + 0.1);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
     osc.start(time);
-    osc.stop(time + 0.05);
+    osc.stop(time + 0.1); // Duração exata de 100ms
   } catch (e) {
     console.error("Erro no agendador de áudio:", e);
   }
