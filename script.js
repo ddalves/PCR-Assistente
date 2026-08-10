@@ -3,7 +3,6 @@ let state = {
   running: false,
   totalSeconds: 0,
   timerInterval: null,
-  beatInterval: null,
   beatActive: true,
   startTime: null,
   endTime: null,
@@ -18,12 +17,19 @@ let state = {
   wakeLock: null
 };
 
+// --- MOTOR DE ÁUDIO DE ALTA PRECISÃO (WEB AUDIO SCHEDULER) ---
 let audioCtx = null;
+let nextNoteTime = 0.0;     // Quando o próximo bip deve tocar (em segundos do Web Audio)
+let timerID = null;         // Timer da thread de agendamento
+const tempo = 110.0;        // 110 BPM
+const lookahead = 25.0;     // Frequência de checagem do agendador (em ms)
+const scheduleAheadTime = 0.1; // Quanto tempo à frente agendar o áudio (em segundos)
 
-// Garante o destravamento e inicialização imediata do Web Audio API e síntese de voz
+// Desbloqueia o motor de áudio e a síntese de voz na interação do usuário
 function unlockAudioEngine() {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    audioCtx = new AudioContextClass();
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
@@ -33,48 +39,77 @@ function unlockAudioEngine() {
   }
 }
 
-// Bip Sonoro Curto do Metrônomo (110 BPM -> 545ms)
-function playBeatTick() {
+// Agenda o bip na linha do tempo exata da placa de som
+function scheduleBeep(time) {
   if (!state.beatActive || !state.running) return;
+
   try {
-    unlockAudioEngine();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(900, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    osc.frequency.setValueAtTime(880, time); // Frequência do Bip (880 Hz - Nota Lá)
+
+    // Envelope de volume para evitar 'estalos' no áudio
+    gain.gain.setValueAtTime(0.3, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.05);
+    osc.start(time);
+    osc.stop(time + 0.05);
   } catch (e) {
-    console.log("Erro ao tocar bip:", e);
+    console.error("Erro no agendador de áudio:", e);
+  }
+}
+
+// Avança o tempo do próximo bip com base nos 110 BPM (60 / 110 = 0.5454...s)
+function nextNote() {
+  const secondsPerBeat = 60.0 / tempo;
+  nextNoteTime += secondsPerBeat;
+}
+
+// Loop contínuo que roda em background agendando os sons futuros
+function scheduler() {
+  while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
+    scheduleBeep(nextNoteTime);
+    nextNote();
+  }
+  timerID = setTimeout(scheduler, lookahead);
+}
+
+function startMetronome() {
+  unlockAudioEngine();
+  if (!state.running) return;
+
+  // Reseta a linha do tempo do agendador para o tempo atual do contexto
+  nextNoteTime = audioCtx.currentTime + 0.05;
+  scheduler();
+}
+
+function stopMetronome() {
+  if (timerID) {
+    clearTimeout(timerID);
+    timerID = null;
   }
 }
 
 function toggleBeat() {
   state.beatActive = !state.beatActive;
   const btn = document.getElementById('btnToggleBeat');
-  btn.innerText = state.beatActive ? "🎵 Bip On" : "🔇 Bip Off";
+  if (btn) {
+    btn.innerText = state.beatActive ? "🎵 Bip On" : "🔇 Bip Off";
+  }
+
+  if (state.beatActive && state.running) {
+    startMetronome();
+  } else {
+    stopMetronome();
+  }
 }
 
-function startMetronome() {
-  if (state.beatInterval) clearInterval(state.beatInterval);
-  playBeatTick(); // Executa a primeira batida imediatamente
-  state.beatInterval = setInterval(() => {
-    playBeatTick();
-  }, 545);
-}
-
-function stopMetronome() {
-  if (state.beatInterval) clearInterval(state.beatInterval);
-}
-
-// Síntese Vocal Nativa
+// Síntese Vocal Nativa (Não interfere no AudioContext do Metrônomo)
 function speak(text) {
   unlockAudioEngine();
   if ('speechSynthesis' in window) {
@@ -87,23 +122,28 @@ function speak(text) {
   }
 }
 
+// Alerta Sonoro Duplo para Intervalos Clínicos (2 min, Adrenalina, etc)
 function playBeepSound() {
   try {
     unlockAudioEngine();
+    const now = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
     osc.type = 'square';
-    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.setValueAtTime(900, now + 0.15);
+
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
   } catch (e) {
-    console.log("Erro no sinal sonoro:", e);
+    console.log("Erro no sinal de alerta:", e);
   }
 }
 
@@ -120,7 +160,8 @@ async function requestWakeLock() {
 function startWallClock() {
   setInterval(() => {
     const now = new Date();
-    document.getElementById('wallClock').innerText = now.toTimeString().substring(0, 8);
+    const clockEl = document.getElementById('wallClock');
+    if (clockEl) clockEl.innerText = now.toTimeString().substring(0, 8);
   }, 1000);
 }
 startWallClock();
@@ -137,8 +178,10 @@ function getFormattedClock() {
   return now.toTimeString().substring(0, 5);
 }
 
+// --- FLUXO DA APLICAÇÃO ---
+
 function selecionarPerfil(element, perfil) {
-  unlockAudioEngine();
+  unlockAudioEngine(); // Garante o destravamento já na seleção
   state.profile = perfil;
   document.querySelectorAll('.card-perfil').forEach(card => card.classList.remove('selecionado'));
   element.classList.add('selecionado');
@@ -150,7 +193,7 @@ function selecionarPerfil(element, perfil) {
 
 function iniciarPCR() {
   if (!state.profile) return;
-  unlockAudioEngine();
+  unlockAudioEngine(); // Confirma ativação de áudio na transição de tela
 
   document.getElementById('tela-setup').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
@@ -166,7 +209,7 @@ function startSession() {
 
   registerEvent(`Início de PCR (${state.profile})`);
   
-  // Inicia áudio e metrônomo instantaneamente na entrada da 2ª tela
+  // Dispara o agendador de alta precisão e a voz
   startMetronome();
   speak(`Início de atendimento. Perfil ${state.profile}. Iniciar compressões.`);
 
@@ -193,12 +236,14 @@ function registerEvent(description) {
 
 function renderLiveLog(item) {
   const list = document.getElementById('liveLogList');
+  if (!list) return;
   const li = document.createElement('li');
   li.innerText = `• ${item.clock} - ${item.label} (${item.elapsed})`;
   list.insertBefore(li, list.firstChild);
 }
 
-// Equipamentos e Intervenções
+// --- BOTÕES DE AÇÃO E REGISTRO DE EVENTOS ---
+
 function handleDEA() {
   state.equipamentoRitmo = 'DEA';
   registerEvent('DEA instalado / analisando');
@@ -260,11 +305,12 @@ function handleAmiodarona() {
   }
 }
 
-// Regras e Alertas Automáticos
+// --- CHECAGEM CONTINUA DE REGRAS ---
+
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
-  // 1. Alerta de 2 Minutos
+  // 1. Alerta de 2 Minutos (Diferenciação DEA vs Monitor)
   if (current > 0 && current % 120 === 0) {
     playBeepSound();
     
@@ -282,7 +328,7 @@ function checkIntervalRules() {
     speak("Ventilar.");
   }
 
-  // 3. Regra de Adrenalina (A cada 3 minutos)
+  // 3. Regra de Adrenalina (a cada 3 minutos)
   if (state.amiodaronaCount === 2 && state.lastAmiodaronaTimestamp) {
     const elapsedAmiodarona = current - state.lastAmiodaronaTimestamp;
     if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
@@ -305,13 +351,18 @@ function checkIntervalRules() {
 
 function showAlert(msg) {
   const alertBox = document.getElementById('medAlertBox');
-  document.getElementById('alertMessage').innerText = msg;
-  alertBox.classList.remove('hidden');
+  if (alertBox) {
+    document.getElementById('alertMessage').innerText = msg;
+    alertBox.classList.remove('hidden');
+  }
 }
 
 function hideAlert() {
-  document.getElementById('medAlertBox').classList.add('hidden');
+  const alertBox = document.getElementById('medAlertBox');
+  if (alertBox) alertBox.classList.add('hidden');
 }
+
+// --- FINALIZAÇÃO E REINÍCIO ---
 
 function handleRCE() {
   if (state.running) {
