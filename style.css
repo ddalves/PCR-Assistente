@@ -11,13 +11,20 @@ body {
   color: #ffffff;
   display: flex;
   justify-content: center;
-  padding: 12px;
+  align-items: flex-start;
   min-height: 100vh;
+  padding: 16px 8px;
+}
+
+/* Responsividade Desktop e Mobile */
+.app-wrapper {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .tela-container {
   width: 100%;
-  max-width: 440px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -26,11 +33,11 @@ body {
 .hidden { display: none !important; }
 
 /* Setup Screen */
-.header-setup { margin-top: 8px; }
+.header-setup { margin-top: 8px; text-align: center; }
 .subtitulo-topo { font-size: 0.75rem; letter-spacing: 1.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; }
 .titulo-principal { font-size: 1.8rem; font-weight: 800; margin: 4px 0 8px 0; }
 .alerta-uso { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; }
-.secao-selecao { display: flex; flex-direction: column; gap: 12px; }
+.secao-selecao { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 .instrucao-selecao { font-size: 0.95rem; color: #e2e8f0; }
 .opcoes-perfil { display: flex; flex-direction: column; gap: 10px; }
 
@@ -48,6 +55,7 @@ body {
 
 .card-perfil.selecionado { border: 2px solid #38bdf8; background-color: #1e3a8a; }
 .perfil-info { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.perfil-info span { font-size: 0.8rem; color: #94a3b8; }
 .check-icon { font-size: 1.2rem; color: #38bdf8; opacity: 0; }
 .card-perfil.selecionado .check-icon { opacity: 1; }
 
@@ -73,7 +81,7 @@ body {
 .timer-card.red-card {
   background-color: #dc2626;
   border-radius: 16px;
-  padding: 16px;
+  padding: 14px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -84,6 +92,25 @@ body {
 .timer-time { font-size: 2.8rem; font-weight: 900; font-family: monospace; margin: 2px 0; color: #ffffff; }
 .timer-pills { display: flex; gap: 8px; margin-top: 4px; }
 .pill-info { background-color: rgba(0, 0, 0, 0.25); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+
+/* Alerta Flutuante */
+.alert-box {
+  background-color: #b91c1c;
+  color: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 0.85rem;
+  border: 1px solid #f87171;
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(248, 113, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0); }
+}
 
 /* Grids e Botões */
 .section-block { display: flex; flex-direction: column; gap: 6px; }
@@ -128,7 +155,7 @@ body {
 ul { list-style: none; }
 li { font-size: 0.8rem; color: #cbd5e1; padding: 4px 0; border-bottom: 1px solid #1e293b; }
 
-/* Tela 3 */
+/* Relatório Final */
 .summary-card { background-color: #172a46; border-radius: 12px; padding: 16px; text-align: center; }
 .profile-info-card { font-size: 0.95rem; color: #cbd5e1; margin-bottom: 6px; }
 .time-info { font-size: 0.85rem; margin-bottom: 8px; }
