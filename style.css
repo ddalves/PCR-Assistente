@@ -16,7 +16,6 @@ body {
   padding: 16px 8px;
 }
 
-/* Responsividade Desktop e Mobile */
 .app-wrapper {
   width: 100%;
   max-width: 480px;
@@ -32,11 +31,39 @@ body {
 
 .hidden { display: none !important; }
 
-/* Setup Screen */
-.header-setup { margin-top: 8px; text-align: center; }
-.subtitulo-topo { font-size: 0.75rem; letter-spacing: 1.5px; color: #38bdf8; font-weight: 700; text-transform: uppercase; }
-.titulo-principal { font-size: 1.8rem; font-weight: 800; margin: 4px 0 8px 0; }
-.alerta-uso { font-size: 0.85rem; color: #94a3b8; line-height: 1.4; }
+/* Títulos Centralizados */
+.header-setup {
+  margin-top: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.subtitulo-topo {
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  color: #38bdf8;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.titulo-principal {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 6px 0 10px 0;
+  text-align: center;
+}
+
+.alerta-uso {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  text-align: center;
+}
+
 .secao-selecao { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
 .instrucao-selecao { font-size: 0.95rem; color: #e2e8f0; }
 .opcoes-perfil { display: flex; flex-direction: column; gap: 10px; }
@@ -91,7 +118,13 @@ body {
 .timer-title { font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: #fecdd3; }
 .timer-time { font-size: 2.8rem; font-weight: 900; font-family: monospace; margin: 2px 0; color: #ffffff; }
 .timer-pills { display: flex; gap: 8px; margin-top: 4px; }
-.pill-info { background-color: rgba(0, 0, 0, 0.25); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+.pill-info { background-color: rgba(0, 0, 0, 0.25); padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; color: #ffffff; }
+
+.btn-toggle-sound {
+  border: none;
+  cursor: pointer;
+  background-color: rgba(0, 0, 0, 0.4);
+}
 
 /* Alerta Flutuante */
 .alert-box {

@@ -14,7 +14,7 @@
       <header class="header-setup">
         <span class="subtitulo-topo">APOIO AO ATENDIMENTO</span>
         <h1 class="titulo-principal">Assistente de PCR</h1>
-        <p class="alerta-uso">Assistente de voz, cronômetro contínuo e linha do tempo.</p>
+        <p class="alerta-uso">Assistente de voz, metrônomo contínuo e linha do tempo.</p>
       </header>
 
       <div class="secao-selecao">
@@ -63,7 +63,7 @@
         <div class="timer-time" id="mainTimer">00:00:00</div>
         <div class="timer-pills">
           <span class="pill-info" id="ritmoPill">Compressão 30:2</span>
-          <span class="pill-info">🔊 Voz Ativa</span>
+          <button class="pill-info btn-toggle-sound" id="btnToggleBeat" onclick="toggleBeat()">🎵 Bip On/Off</button>
         </div>
       </div>
 
@@ -71,15 +71,15 @@
         <span id="alertMessage">--</span>
       </div>
 
-      <!-- SUPORTE (5 Botões) -->
+      <!-- SUPORTE -->
       <div class="section-block">
         <span class="section-label">SUPORTE</span>
         <div class="grid-suporte">
-          <button class="btn btn-blue" onclick="registerEvent('DEA instalado / analisando')">⚡ DEA</button>
+          <button class="btn btn-blue" onclick="handleDEA()">⚡ DEA</button>
           <button class="btn btn-blue" onclick="registerEvent('Acesso EV/IO estabelecido')">💉 Acesso</button>
           <button class="btn btn-blue" onclick="handleVentilacao()">🫁 Ventilação</button>
           <button class="btn btn-blue" onclick="handleIntubacao()">🩺 Intubação</button>
-          <button class="btn btn-blue span-full" onclick="registerEvent('Monitor cardíaco instalado')">🖥️ Monitor</button>
+          <button class="btn btn-blue span-full" onclick="handleMonitor()">🖥️ Monitor</button>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
       <div class="section-block">
         <span class="section-label">INTERVENÇÕES</span>
         <div class="grid-2">
-          <button class="btn btn-red" onclick="handleChoque()">⚡ Choque ( <span id="countChoque">5</span> )</button>
+          <button class="btn btn-red" onclick="handleChoque()">⚡ Choque ( <span id="countChoque">0</span> )</button>
           <button class="btn btn-red" onclick="handleAdrenalina()">💉 Adrenalina ( <span id="countAdrenalina">0</span> )</button>
         </div>
         <button class="btn btn-red span-full margin-top-6" onclick="handleAmiodarona()">💊 Amiodarona ( <span id="countAmiodarona">0</span> )</button>

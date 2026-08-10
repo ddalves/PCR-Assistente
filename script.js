@@ -3,33 +3,82 @@ let state = {
   running: false,
   totalSeconds: 0,
   timerInterval: null,
+  beatInterval: null,
+  beatActive: true,
   startTime: null,
   endTime: null,
   events: [],
-  choqueCount: 5,
+  choqueCount: 0,
   adrenalinaCount: 0,
   amiodaronaCount: 0,
   isIntubated: false,
+  equipamentoRitmo: 'NENHUM', // 'DEA' ou 'MONITOR'
   lastAdrenalinaTimestamp: null,
   lastAmiodaronaTimestamp: null,
   wakeLock: null
 };
 
-// --- WAKE LOCK (Impedir que a tela apague) ---
-async function requestWakeLock() {
-  try {
-    if ('wakeLock' in navigator) {
-      state.wakeLock = await navigator.wakeLock.request('screen');
-    }
-  } catch (err) {
-    console.log("Wake Lock não ativado:", err);
+let audioCtx = null;
+
+// Garante o destravamento e inicialização imediata do Web Audio API e síntese de voz
+function unlockAudioEngine() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.resume();
   }
 }
 
-// --- SÍNTESE DE VOZ E BEEP ---
+// Bip Sonoro Curto do Metrônomo (110 BPM -> 545ms)
+function playBeatTick() {
+  if (!state.beatActive || !state.running) return;
+  try {
+    unlockAudioEngine();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(900, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  } catch (e) {
+    console.log("Erro ao tocar bip:", e);
+  }
+}
+
+function toggleBeat() {
+  state.beatActive = !state.beatActive;
+  const btn = document.getElementById('btnToggleBeat');
+  btn.innerText = state.beatActive ? "🎵 Bip On" : "🔇 Bip Off";
+}
+
+function startMetronome() {
+  if (state.beatInterval) clearInterval(state.beatInterval);
+  playBeatTick(); // Executa a primeira batida imediatamente
+  state.beatInterval = setInterval(() => {
+    playBeatTick();
+  }, 545);
+}
+
+function stopMetronome() {
+  if (state.beatInterval) clearInterval(state.beatInterval);
+}
+
+// Síntese Vocal Nativa
 function speak(text) {
+  unlockAudioEngine();
   if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel(); // Cancela falas anteriores
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
     utterance.rate = 1.0;
@@ -40,25 +89,34 @@ function speak(text) {
 
 function playBeepSound() {
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    unlockAudioEngine();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
-    osc.type = 'sine';
+    osc.type = 'square';
     osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
     osc.start();
-    osc.stop(audioCtx.currentTime + 0.6);
+    osc.stop(audioCtx.currentTime + 0.4);
   } catch (e) {
-    console.log("Erro de áudio Context");
+    console.log("Erro no sinal sonoro:", e);
   }
 }
 
-// Relógio Barra Superior
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      state.wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (err) {
+    console.log("Wake Lock indisponível:", err);
+  }
+}
+
 function startWallClock() {
   setInterval(() => {
     const now = new Date();
@@ -79,8 +137,8 @@ function getFormattedClock() {
   return now.toTimeString().substring(0, 5);
 }
 
-// Tela 1
 function selecionarPerfil(element, perfil) {
+  unlockAudioEngine();
   state.profile = perfil;
   document.querySelectorAll('.card-perfil').forEach(card => card.classList.remove('selecionado'));
   element.classList.add('selecionado');
@@ -92,26 +150,29 @@ function selecionarPerfil(element, perfil) {
 
 function iniciarPCR() {
   if (!state.profile) return;
+  unlockAudioEngine();
+
   document.getElementById('tela-setup').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
-  
+
   requestWakeLock();
   startSession();
 }
 
-// Sessão e Timer Principal
 function startSession() {
   if (state.running) return;
   state.running = true;
   if (!state.startTime) state.startTime = getFormattedClock();
 
   registerEvent(`Início de PCR (${state.profile})`);
+  
+  // Inicia áudio e metrônomo instantaneamente na entrada da 2ª tela
+  startMetronome();
   speak(`Início de atendimento. Perfil ${state.profile}. Iniciar compressões.`);
 
   state.timerInterval = setInterval(() => {
     state.totalSeconds++;
     document.getElementById('mainTimer').innerText = formatHHMMSS(state.totalSeconds);
-    
     checkIntervalRules();
   }, 1000);
 }
@@ -137,7 +198,19 @@ function renderLiveLog(item) {
   list.insertBefore(li, list.firstChild);
 }
 
-// --- AÇÕES DO SUPORTE ---
+// Equipamentos e Intervenções
+function handleDEA() {
+  state.equipamentoRitmo = 'DEA';
+  registerEvent('DEA instalado / analisando');
+  speak("D E A instalado. Siga as instruções do aparelho.");
+}
+
+function handleMonitor() {
+  state.equipamentoRitmo = 'MONITOR';
+  registerEvent('Monitor cardíaco instalado');
+  speak("Monitor cardíaco instalado.");
+}
+
 function handleVentilacao() {
   registerEvent('Ventilação com bolsa-válvula-máscara');
   if (!state.isIntubated) {
@@ -153,7 +226,6 @@ function handleIntubacao() {
   speak("Paciente intubado. Transição para ventilação contínua: uma ventilação a cada 6 segundos e compressões ininterruptas.");
 }
 
-// --- INTERVENÇÕES ---
 function handleChoque() {
   state.choqueCount++;
   document.getElementById('countChoque').innerText = state.choqueCount;
@@ -181,36 +253,42 @@ function handleAmiodarona() {
     state.lastAmiodaronaTimestamp = state.totalSeconds;
     document.getElementById('countAmiodarona').innerText = 2;
     registerEvent("Amiodarona (2ª dose - 150mg)");
-    speak("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
+    speak("Amiodarona segunda dose de 150 miligramas administrada. Retornar ao ciclo de Adrenalina.");
     hideAlert();
   } else {
     alert("Dose máxima de Amiodarona (150mg) já administrada.");
   }
 }
 
-// --- REGRAS DE TEMPO & ALERTAS POR VOZ ---
+// Regras e Alertas Automáticos
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
-  // 1. Alerta de 2 minutos (Checar pulso e ritmo)
+  // 1. Alerta de 2 Minutos
   if (current > 0 && current % 120 === 0) {
     playBeepSound();
-    showAlert("⚠️ 2 MINUTOS: Checar ritmo e trocar socorrista!");
-    speak("Atenção: Dois minutos de manobras. Pausar para checar ritmo e trocar o socorrista.");
+    
+    if (state.equipamentoRitmo === 'DEA') {
+      showAlert("⚠️ 2 MINUTOS: Pausar manobras e seguir orientações do DEA!");
+      speak("Atenção: Dois minutos. Pausar manobras, trocar socorrista e seguir as orientações do D E A.");
+    } else {
+      showAlert("⚠️ 2 MINUTOS: Pausar, checar ritmo, pulso e trocar socorrista!");
+      speak("Atenção: Dois minutos. Pausar manobras, checar ritmo e pulso, e trocar o socorrista.");
+    }
   }
 
-  // 2. Alerta para Ventilação Contínua (a cada 6s se intubado)
-  if (state.isIntubated && current % 6 === 0) {
-    // Tom discreto opcional
+  // 2. Alerta de Ventilação a cada 6s quando intubado
+  if (state.isIntubated && current > 0 && current % 6 === 0) {
+    speak("Ventilar.");
   }
 
-  // 3. Regra de 3 Minutos para Adrenalina (pós 2ª Amiodarona ou ciclo normal)
+  // 3. Regra de Adrenalina (A cada 3 minutos)
   if (state.amiodaronaCount === 2 && state.lastAmiodaronaTimestamp) {
     const elapsedAmiodarona = current - state.lastAmiodaronaTimestamp;
     if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Aplicar Adrenalina (3 min pós 2ª Amiodarona)");
-      speak("Atenção: Três minutos após segunda dose de Amiodarona. Hora de aplicar Adrenalina.");
+      speak("Atenção: Três minutos após segunda dose de Amiodarona. Aplicar Adrenalina.");
       return;
     }
   }
@@ -219,7 +297,7 @@ function checkIntervalRules() {
     const elapsedAdrenalina = current - state.lastAdrenalinaTimestamp;
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
       playBeepSound();
-      showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (intervalo de 3 min)");
+      showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (3 min)");
       speak("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
     }
   }
@@ -235,11 +313,11 @@ function hideAlert() {
   document.getElementById('medAlertBox').classList.add('hidden');
 }
 
-// --- RESULTADOS ---
 function handleRCE() {
   if (state.running) {
     state.running = false;
     clearInterval(state.timerInterval);
+    stopMetronome();
     registerEvent("RCE — Retorno da Circulação Espontânea (Cronômetro Pausado)");
     speak("Retorno da circulação espontânea confirmado. Cronômetro pausado. Iniciar cuidados pós-parada.");
   }
@@ -250,9 +328,10 @@ function handleNovaPCR() {
   speak("Nova parada cardiorrespiratória. Reiniciando cronômetro e compressões.");
   state.totalSeconds = 0;
   document.getElementById('mainTimer').innerText = "00:00:00";
-  
+
   if (!state.running) {
     state.running = true;
+    startMetronome();
     state.timerInterval = setInterval(() => {
       state.totalSeconds++;
       document.getElementById('mainTimer').innerText = formatHHMMSS(state.totalSeconds);
@@ -264,6 +343,7 @@ function handleNovaPCR() {
 function handleFinalizar() {
   state.running = false;
   clearInterval(state.timerInterval);
+  stopMetronome();
   state.endTime = getFormattedClock();
 
   if (state.wakeLock) {
@@ -279,7 +359,6 @@ function handleFinalizar() {
   renderReport();
 }
 
-// Tela 3
 function renderReport() {
   document.getElementById('reportProfileDisplay').innerText = state.profile;
   document.getElementById('startTimeDisplay').innerText = state.startTime;
