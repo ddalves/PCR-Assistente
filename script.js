@@ -348,11 +348,16 @@ function handleVentilacao() {
   guarded('ventilacao', () => {
     initAudio();
     registerEvent('Ventilação com bolsa-válvula-máscara');
+
     if (!state.isIntubated) {
       const profUpper = (state.profile || '').toUpperCase();
-      const isPediatric = profUpper.includes('PEDIÁTRICO') || profUpper.includes('PEDIATRICO') || profUpper.includes('CRIANÇA') || profUpper.includes('BEBÊ') || profUpper.includes('NEONATAL');
-      const ratio = isPediatric ? '15 para 2' : '30 para 2';
-      speak(`Ventilação com máscara. Mantendo relação de ${ratio}.`);
+      const isPediatric = profUpper.includes('CRIANÇA') || profUpper.includes('BEBÊ') || profUpper.includes('BEBE') || profUpper.includes('PEDIÁTRICO') || profUpper.includes('PEDIATRICO') || profUpper.includes('NEONATAL');
+
+      if (isPediatric) {
+        speak("Ventilação com máscara. Se dois socorristas, manter 15 para 2.");
+      } else {
+        speak("Ventilação com máscara. Mantendo relação de 30 para 2.");
+      }
     } else {
       speak("Ventilação em via aérea avançada. Uma ventilação a cada 6 segundos.");
     }
