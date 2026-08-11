@@ -1,9 +1,10 @@
 // ============================================================
-// ASSISTENTE PCR — ESTADO GLOBAL
+// ASSISTENTE PCR — 
 // ============================================================
 let state = {
   profile: null,
   running: false,
+  deviceMode: 'NENHUM', 
   totalSeconds: 0,
   timerInterval: null,
   startTime: null,
@@ -32,7 +33,7 @@ function guarded(key, fn, cooldownMs = 600) {
   fn();
 }
 
-// Inicializa o AudioContext com toque humano para não ser bloqueado pelo navegador
+// Inicializa o AudioContext com interação do usuário para evitar bloqueio do navegador
 function initAudio() {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -263,7 +264,8 @@ setInterval(() => {
 function startWallClock() {
   setInterval(() => {
     const now = new Date();
-    document.getElementById('wallClock').innerText = now.toTimeString().substring(0, 8);
+    const wallClockEl = document.getElementById('wallClock');
+    if (wallClockEl) wallClockEl.innerText = now.toTimeString().substring(0, 8);
   }, 1000);
 }
 startWallClock();
@@ -290,8 +292,10 @@ function selecionarPerfil(element, perfil) {
   element.classList.add('selecionado');
 
   const btnIniciar = document.getElementById('btn-iniciar-pcr');
-  btnIniciar.disabled = false;
-  btnIniciar.innerText = `INICIAR ATENDIMENTO (${perfil})`;
+  if (btnIniciar) {
+    btnIniciar.disabled = false;
+    btnIniciar.innerText = `INICIAR ATENDIMENTO (${perfil})`;
+  }
 }
 
 function iniciarPCR() {
@@ -315,7 +319,8 @@ function startSession() {
 
   state.timerInterval = setInterval(() => {
     state.totalSeconds++;
-    document.getElementById('mainTimer').innerText = formatHHMMSS(state.totalSeconds);
+    const timerEl = document.getElementById('mainTimer');
+    if (timerEl) timerEl.innerText = formatHHMMSS(state.totalSeconds);
     checkIntervalRules();
   }, 1000);
 }
@@ -336,9 +341,11 @@ function registerEvent(description) {
 
 function renderLiveLog(item) {
   const list = document.getElementById('liveLogList');
-  const li = document.createElement('li');
-  li.innerText = `• ${item.clock} - ${item.label} (${item.elapsed})`;
-  list.insertBefore(li, list.firstChild);
+  if (list) {
+    const li = document.createElement('li');
+    li.innerText = `• ${item.clock} - ${item.label} (${item.elapsed})`;
+    list.insertBefore(li, list.firstChild);
+  }
 }
 
 // ============================================================
@@ -368,7 +375,8 @@ function handleIntubacao() {
   guarded('intubacao', () => {
     initAudio();
     state.isIntubated = true;
-    document.getElementById('ritmoPill').innerText = 'Ventilação 1 a cada 6s';
+    const ritmoPill = document.getElementById('ritmoPill');
+    if (ritmoPill) ritmoPill.innerText = 'Ventilação 1 a cada 6s';
     registerEvent('Intubação / Via Aérea Avançada');
     speakPriority("Paciente intubado. Transição para ventilação contínua de uma a cada 6 segundos, com compressões ininterruptas.");
   });
@@ -381,7 +389,8 @@ function handleChoque() {
   guarded('choque', () => {
     initAudio();
     state.choqueCount++;
-    document.getElementById('countChoque').innerText = state.choqueCount;
+    const countChoque = document.getElementById('countChoque');
+    if (countChoque) countChoque.innerText = state.choqueCount;
     registerEvent(`Choque aplicado (${state.choqueCount}º)`);
     speakPriority("Choque aplicado. Reiniciar compressões imediatamente.");
     resumeCompressionMetronome();
@@ -393,7 +402,8 @@ function handleAdrenalina() {
     initAudio();
     state.adrenalinaCount++;
     state.lastAdrenalinaTimestamp = state.totalSeconds;
-    document.getElementById('countAdrenalina').innerText = state.adrenalinaCount;
+    const countAdrenalina = document.getElementById('countAdrenalina');
+    if (countAdrenalina) countAdrenalina.innerText = state.adrenalinaCount;
     registerEvent(`Adrenalina (${state.adrenalinaCount}ª dose)`);
     speakPriority(`Adrenalina ${state.adrenalinaCount}ª dose administrada.`);
     hideAlert();
@@ -407,13 +417,15 @@ function handleAmiodarona() {
       state.amiodaronaCount = 1;
       state.amiodaronaFirstDoseTimestamp = state.totalSeconds;
       state.amiodarona2ndReminderFired = false;
-      document.getElementById('countAmiodarona').innerText = 1;
+      const countAmio = document.getElementById('countAmiodarona');
+      if (countAmio) countAmio.innerText = 1;
       registerEvent("Amiodarona (1ª dose - 300mg)");
       speakPriority("Amiodarona primeira dose de 300 miligramas administrada.");
     } else if (state.amiodaronaCount === 1) {
       state.amiodaronaCount = 2;
       state.lastAmiodaronaTimestamp = state.totalSeconds;
-      document.getElementById('countAmiodarona').innerText = 2;
+      const countAmio = document.getElementById('countAmiodarona');
+      if (countAmio) countAmio.innerText = 2;
       registerEvent("Amiodarona (2ª dose - 150mg)");
       speakPriority("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
       hideAlert();
@@ -424,16 +436,26 @@ function handleAmiodarona() {
 }
 
 // ============================================================
-// REGRAS DE TEMPO & ALERTAS
+// REGRAS DE TEMPO & ALERTAS (CORRIGIDO)
 // ============================================================
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
+  // 1. Ciclos de 2 Minutos (Troca de socorrista e avaliação de ritmo)
   if (current > 0 && current % 120 === 0) {
     pauseCompressionMetronome();
     startAlertBeepLoop();
-    showAlert("⚠️ 2 MINUTOS: Checar ritmo e pulso (máx 10s) e trocar socorrista!");
-    speakPriority("Atenção: Dois minutos de manobras. Pausar para checar ritmo e pulso.");
+
+    if (state.deviceMode === 'DEA') {
+      showAlert("⚠️ 2 MINUTOS: Atenção aos comandos de voz do DEA e troque o socorrista!");
+      speakPriority("Atenção: Dois minutos. Pause e preste atenção nos comandos do DEA. Trocar socorrista.");
+    } else if (state.deviceMode === 'MONITOR') {
+      showAlert("⚠️ 2 MINUTOS: Avaliar ritmo no monitor, checar pulso (máx 10s) e trocar socorrista!");
+      speakPriority("Atenção: Dois minutos. Checar ritmo no monitor e pulso central. Trocar socorrista.");
+    } else {
+      showAlert("⚠️ 2 MINUTOS: Checar ritmo/pulso (máx 10s) e trocar socorrista!");
+      speakPriority("Atenção: Dois minutos de manobras. Pausar para checar ritmo e pulso.");
+    }
 
     if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout);
 
@@ -447,6 +469,7 @@ function checkIntervalRules() {
     }, 10000);
   }
 
+  // 2. Lembrete de 2ª dose de Amiodarona (3 minutos após a 1ª dose)
   if (state.amiodaronaCount === 1 && state.amiodaronaFirstDoseTimestamp !== null && !state.amiodarona2ndReminderFired) {
     const elapsedAmio = current - state.amiodaronaFirstDoseTimestamp;
     if (elapsedAmio >= 180) {
@@ -457,6 +480,7 @@ function checkIntervalRules() {
     }
   }
 
+  // 3. Intervalo de Adrenalina (A cada 3 a 5 minutos)
   if (state.lastAdrenalinaTimestamp !== null) {
     const elapsedAdrenalina = current - state.lastAdrenalinaTimestamp;
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
@@ -469,12 +493,14 @@ function checkIntervalRules() {
 
 function showAlert(msg) {
   const alertBox = document.getElementById('medAlertBox');
-  document.getElementById('alertMessage').innerText = msg;
-  alertBox.classList.remove('hidden');
+  const alertMsg = document.getElementById('alertMessage');
+  if (alertMsg) alertMsg.innerText = msg;
+  if (alertBox) alertBox.classList.remove('hidden');
 }
 
 function hideAlert() {
-  document.getElementById('medAlertBox').classList.add('hidden');
+  const alertBox = document.getElementById('medAlertBox');
+  if (alertBox) alertBox.classList.add('hidden');
   stopAlertBeepLoop();
 }
 
@@ -501,13 +527,14 @@ function handleNovaPCR() {
     registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro");
     speakPriority("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
     state.totalSeconds = 0;
-    document.getElementById('mainTimer').innerText = "00:00:00";
+    const timerEl = document.getElementById('mainTimer');
+    if (timerEl) timerEl.innerText = "00:00:00";
 
     if (!state.running) {
       state.running = true;
       state.timerInterval = setInterval(() => {
         state.totalSeconds++;
-        document.getElementById('mainTimer').innerText = formatHHMMSS(state.totalSeconds);
+        if (timerEl) timerEl.innerText = formatHHMMSS(state.totalSeconds);
         checkIntervalRules();
       }, 1000);
     }
@@ -539,19 +566,20 @@ function handleFinalizar() {
 }
 
 function renderReport() {
-  document.getElementById('reportProfileDisplay').innerText = state.profile;
-  document.getElementById('startTimeDisplay').innerText = state.startTime;
-  document.getElementById('endTimeDisplay').innerText = state.endTime;
+  document.getElementById('reportProfileDisplay').innerText = state.profile || 'Não especificado';
+  document.getElementById('startTimeDisplay').innerText = state.startTime || '--:--';
+  document.getElementById('endTimeDisplay').innerText = state.endTime || '--:--';
   document.getElementById('totalDurationDisplay').innerText = formatHHMMSS(state.totalSeconds);
 
   const reportList = document.getElementById('reportLogList');
-  reportList.innerHTML = "";
-
-  state.events.forEach(ev => {
-    const li = document.createElement('li');
-    li.innerText = `• ${ev.clock} - ${ev.label} (${ev.elapsed})`;
-    reportList.appendChild(li);
-  });
+  if (reportList) {
+    reportList.innerHTML = "";
+    state.events.forEach(ev => {
+      const li = document.createElement('li');
+      li.innerText = `• ${ev.clock} - ${ev.label} (${ev.elapsed})`;
+      reportList.appendChild(li);
+    });
+  }
 }
 
 function getPlainTextReport() {
