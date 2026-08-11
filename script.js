@@ -15,6 +15,8 @@ let state = {
   isIntubated: false,
   lastAdrenalinaTimestamp: null,
   lastAmiodaronaTimestamp: null,
+  amiodaronaFirstDoseTimestamp: null,
+  amiodarona2ndReminderFired: false,
   wakeLock: null
 };
 
@@ -41,7 +43,7 @@ function initAudio() {
 }
 
 // ============================================================
-// MOTOR DE VOZ — FILA NORMAL + FILA PRIORITÁRIA (SEM SOBREPOSIÇÃO)
+// MOTOR DE VOZ — FILA NORMAL + FILA PRIORITÁRIA
 // ============================================================
 let selectedVoice = null;
 let speechQueue = [];
@@ -59,7 +61,6 @@ function loadBestVoice() {
 
   if (!available.length) return;
 
-  // Prioriza vozes de rede (mais naturais) e depois vozes locais de qualidade conhecida
   const network = available.find(v => !v.localService);
   const localQuality = available.find(v => {
     const name = v.name.toLowerCase();
@@ -74,7 +75,6 @@ if ('speechSynthesis' in window) {
   loadBestVoice();
 }
 
-// Processa a fila normal (não crítica) — nunca interrompe uma fala em andamento
 function processSpeechQueue() {
   if (isSpeaking || !speechQueue.length || !('speechSynthesis' in window)) return;
 
@@ -91,9 +91,6 @@ function processSpeechQueue() {
 
   isSpeaking = true;
 
-  // Trava de segurança: se o motor de voz do navegador travar (bug comum em iOS/Chrome
-  // quando a tela bloqueia ou o app vai para 2º plano) e onend nunca disparar,
-  // isso força a liberação em 6s — evita a fila entupir e "explodir" tudo de uma vez depois.
   speechSafetyTimeout = setTimeout(() => {
     window.speechSynthesis.cancel();
     isSpeaking = false;
@@ -115,16 +112,12 @@ function processSpeechQueue() {
   window.speechSynthesis.speak(utterance);
 }
 
-// Fala não crítica: entra na fila, espera a vez, nunca corta a frase anterior
 function speak(text) {
   if (!text || !('speechSynthesis' in window)) return;
   speechQueue.push(text);
   processSpeechQueue();
 }
 
-// Fala CRÍTICA: cancela imediatamente qualquer fala em andamento e a fila,
-// e assume a voz na hora. Usar apenas para eventos que mudam conduta clínica
-// (choque, intubação, RCE, nova PCR, finalização).
 function speakPriority(text) {
   if (!('speechSynthesis' in window)) return;
 
@@ -139,12 +132,11 @@ function speakPriority(text) {
 
 // ============================================================
 // METRÔNOMO DE COMPRESSÃO — PROTOCOLO AHA (100-120/min)
-// Usa o clock do AudioContext (preciso, sem drift) em vez de setInterval puro
 // ============================================================
-const COMPRESSION_BPM = 110; // dentro da faixa AHA 100-120/min
+const COMPRESSION_BPM = 110;
 const SECONDS_PER_BEAT = 60.0 / COMPRESSION_BPM;
-const SCHEDULE_AHEAD_TIME = 0.15; // segundos agendados à frente
-const LOOKAHEAD_MS = 25;          // frequência de checagem do agendador
+const SCHEDULE_AHEAD_TIME = 0.15;
+const LOOKAHEAD_MS = 25;
 
 let metronomeRunning = false;
 let nextBeatTime = 0.0;
@@ -155,7 +147,7 @@ function scheduleCompressionClick(time) {
   const gain = audioCtx.createGain();
 
   osc.type = 'square';
-  osc.frequency.setValueAtTime(1000, time); // clique seco, distinto do alarme
+  osc.frequency.setValueAtTime(1000, time);
   gain.gain.setValueAtTime(0.5, time);
   gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
 
@@ -190,8 +182,6 @@ function stopCompressionMetronome() {
 }
 
 function pauseCompressionMetronome() {
-  // usado na checagem de pulso/ritmo (10s) — não faz sentido bipar ritmo de
-  // compressão enquanto ninguém está comprimindo
   stopCompressionMetronome();
 }
 
@@ -200,13 +190,11 @@ function resumeCompressionMetronome() {
 }
 
 // ============================================================
-// ALARME DE ALERTA — AGUDO E CONTÍNUO (padrão monitor hospitalar)
-// Repete até o evento ser reconhecido (hideAlert), diferente do
-// clique do metrônomo — tom mais alto, cadência mais lenta.
+// ALARME DE ALERTA (2400Hz)
 // ============================================================
-const ALERT_FREQ_HZ = 2400;   // agudo, tipo alarme de monitor multiparamétrico
-const ALERT_BEEP_MS = 180;    // duração de cada bipe
-const ALERT_REPEAT_MS = 700;  // intervalo entre bipes
+const ALERT_FREQ_HZ = 2400;
+const ALERT_BEEP_MS = 180;
+const ALERT_REPEAT_MS = 700;
 
 let alertBeepInterval = null;
 
@@ -232,7 +220,7 @@ function playSingleAlertTone() {
 }
 
 function startAlertBeepLoop() {
-  stopAlertBeepLoop(); // evita duplicar loops simultâneos
+  stopAlertBeepLoop();
   playSingleAlertTone();
   alertBeepInterval = setInterval(playSingleAlertTone, ALERT_REPEAT_MS);
 }
@@ -244,18 +232,34 @@ function stopAlertBeepLoop() {
   }
 }
 
-// --- WAKE LOCK ---
+// ============================================================
+// WAKE LOCK & RELÓGIO
+// ============================================================
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       state.wakeLock = await navigator.wakeLock.request('screen');
+      state.wakeLock.addEventListener('release', () => {
+        console.log("Wake Lock liberado pelo sistema — será readquirido automaticamente.");
+      });
     }
   } catch (err) {
     console.log("Wake Lock não ativado:", err);
   }
 }
 
-// Relógio Barra Superior
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState === 'visible' && state.running) {
+    await requestWakeLock();
+  }
+});
+
+setInterval(() => {
+  if (state.running && (!state.wakeLock || state.wakeLock.released)) {
+    requestWakeLock();
+  }
+}, 15000);
+
 function startWallClock() {
   setInterval(() => {
     const now = new Date();
@@ -277,7 +281,7 @@ function getFormattedClock() {
 }
 
 // ============================================================
-// TELA 1 — SETUP
+// SETUP & SESSÃO
 // ============================================================
 function selecionarPerfil(element, perfil) {
   initAudio();
@@ -300,9 +304,6 @@ function iniciarPCR() {
   startSession();
 }
 
-// ============================================================
-// SESSÃO E TIMER PRINCIPAL
-// ============================================================
 function startSession() {
   if (state.running) return;
   state.running = true;
@@ -341,14 +342,16 @@ function renderLiveLog(item) {
 }
 
 // ============================================================
-// AÇÕES DE SUPORTE VENTILATÓRIO
+// SUPORTE VENTILATÓRIO
 // ============================================================
 function handleVentilacao() {
   guarded('ventilacao', () => {
     initAudio();
     registerEvent('Ventilação com bolsa-válvula-máscara');
     if (!state.isIntubated) {
-      const ratio = state.profile === 'PEDIÁTRICO' ? '15 para 2' : '30 para 2';
+      const profUpper = (state.profile || '').toUpperCase();
+      const isPediatric = profUpper.includes('PEDIÁTRICO') || profUpper.includes('PEDIATRICO') || profUpper.includes('CRIANÇA') || profUpper.includes('BEBÊ') || profUpper.includes('NEONATAL');
+      const ratio = isPediatric ? '15 para 2' : '30 para 2';
       speak(`Ventilação com máscara. Mantendo relação de ${ratio}.`);
     } else {
       speak("Ventilação em via aérea avançada. Uma ventilação a cada 6 segundos.");
@@ -362,7 +365,6 @@ function handleIntubacao() {
     state.isIntubated = true;
     document.getElementById('ritmoPill').innerText = 'Ventilação 1 a cada 6s';
     registerEvent('Intubação / Via Aérea Avançada');
-    // Evento crítico: interrompe qualquer fala em andamento (ex: alerta de 2 min)
     speakPriority("Paciente intubado. Transição para ventilação contínua de uma a cada 6 segundos, com compressões ininterruptas.");
   });
 }
@@ -376,7 +378,7 @@ function handleChoque() {
     state.choqueCount++;
     document.getElementById('countChoque').innerText = state.choqueCount;
     registerEvent(`Choque aplicado (${state.choqueCount}º)`);
-    speakPriority(`Choque número ${state.choqueCount} aplicado. Reiniciar compressões imediatamente.`);
+    speakPriority("Choque aplicado. Reiniciar compressões imediatamente.");
     resumeCompressionMetronome();
   });
 }
@@ -398,6 +400,8 @@ function handleAmiodarona() {
     initAudio();
     if (state.amiodaronaCount === 0) {
       state.amiodaronaCount = 1;
+      state.amiodaronaFirstDoseTimestamp = state.totalSeconds;
+      state.amiodarona2ndReminderFired = false;
       document.getElementById('countAmiodarona').innerText = 1;
       registerEvent("Amiodarona (1ª dose - 300mg)");
       speakPriority("Amiodarona primeira dose de 300 miligramas administrada.");
@@ -415,12 +419,11 @@ function handleAmiodarona() {
 }
 
 // ============================================================
-// REGRAS DE TEMPO & ALERTAS POR VOZ (AHA)
+// REGRAS DE TEMPO & ALERTAS
 // ============================================================
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
-  // 1. Alerta de 2 minutos: pausa compressão, checa ritmo/pulso (máx 10s AHA)
   if (current > 0 && current % 120 === 0) {
     pauseCompressionMetronome();
     startAlertBeepLoop();
@@ -433,32 +436,28 @@ function checkIntervalRules() {
       if (state.running) {
         stopAlertBeepLoop();
         hideAlert();
-        speakPriority("Tempo limite atingido. Volte às compressões imediatamente.");
+        speak("Tempo limite atingido. Volte às compressões imediatamente.");
         resumeCompressionMetronome();
       }
     }, 10000);
-
-    return;
   }
 
-  // 2. Alerta de 3 minutos para Adrenalina (pós 2ª Amiodarona)
-  if (state.amiodaronaCount === 2 && state.lastAmiodaronaTimestamp) {
-    const elapsedAmiodarona = current - state.lastAmiodaronaTimestamp;
-    if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
-      startAlertBeepLoop();
-      showAlert("🔔 ALERTA: Aplicar Adrenalina (3 min pós 2ª Amiodarona)");
-      speak("Atenção: Três minutos após segunda dose de Amiodarona. Aplicar Adrenalina.");
-      return;
+  if (state.amiodaronaCount === 1 && state.amiodaronaFirstDoseTimestamp !== null && !state.amiodarona2ndReminderFired) {
+    const elapsedAmio = current - state.amiodaronaFirstDoseTimestamp;
+    if (elapsedAmio >= 180) {
+      state.amiodarona2ndReminderFired = true;
+      playSingleAlertTone();
+      showAlert("💊 3 MIN: Considerar 2ª dose de Amiodarona (150mg)");
+      speak("Atenção: três minutos desde a primeira dose de Amiodarona. Considere a segunda dose de 150 miligramas.");
     }
   }
 
-  // 3. Alerta de 3 minutos para Adrenalina contínua
-  if (state.lastAdrenalinaTimestamp) {
+  if (state.lastAdrenalinaTimestamp !== null) {
     const elapsedAdrenalina = current - state.lastAdrenalinaTimestamp;
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
-      startAlertBeepLoop();
-      showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (intervalo de 3 min)");
-      speak("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
+      playSingleAlertTone();
+      showAlert("🔔 3 MIN: Avaliar/Aplicar Adrenalina");
+      speak("Atenção: três minutos desde a última Adrenalina. Avaliar nova dose.");
     }
   }
 }
@@ -475,7 +474,7 @@ function hideAlert() {
 }
 
 // ============================================================
-// RESULTADOS
+// RESULTADOS E RELATÓRIO
 // ============================================================
 function handleRCE() {
   guarded('rce', () => {
@@ -534,9 +533,6 @@ function handleFinalizar() {
   });
 }
 
-// ============================================================
-// TELA 3 — RELATÓRIO
-// ============================================================
 function renderReport() {
   document.getElementById('reportProfileDisplay').innerText = state.profile;
   document.getElementById('startTimeDisplay').innerText = state.startTime;
