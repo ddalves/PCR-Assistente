@@ -16,11 +16,12 @@ let state = {
 };
 
 // ============================================================
-// MOTOR DE VOZ E ÁUDIO (FILA + MELHOR VOZ PT-BR)
+// MOTOR DE VOZ E ÁUDIO (COM DESTRAVAMENTO ANTI-BUG)
 // ============================================================
 let selectedVoice = null;
 let speechQueue = [];
 let isSpeaking = false;
+let speechTimeout = null;
 
 function loadBestVoice() {
   if (!('speechSynthesis' in window)) return;
@@ -52,6 +53,8 @@ if ('speechSynthesis' in window) {
 function processSpeechQueue() {
   if (isSpeaking || !speechQueue.length || !('speechSynthesis' in window)) return;
 
+  if (speechTimeout) clearTimeout(speechTimeout);
+
   const text = speechQueue.shift();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'pt-BR';
@@ -63,17 +66,41 @@ function processSpeechQueue() {
 
   isSpeaking = true;
 
-  utterance.onend = () => {
+  // Trava de segurança: Se o motor de voz travar por +5s, força a liberação
+  speechTimeout = setTimeout(() => {
+    console.warn("Voz travada detectada. Forçando reset.");
+    window.speechSynthesis.cancel();
     isSpeaking = false;
-    setTimeout(processSpeechQueue, 80);
+    processSpeechQueue();
+  }, 5000);
+
+  utterance.onend = () => {
+    clearTimeout(speechTimeout);
+    isSpeaking = false;
+    setTimeout(processSpeechQueue, 100);
   };
 
-  utterance.onerror = () => {
+  utterance.onerror = (e) => {
+    console.error("Erro na síntese de voz:", e);
+    clearTimeout(speechTimeout);
     isSpeaking = false;
-    setTimeout(processSpeechQueue, 50);
+    setTimeout(processSpeechQueue, 100);
   };
 
   window.speechSynthesis.speak(utterance);
+}
+
+// Cancela áudios pendentes para dar prioridade imediata aos alertas vitais
+function speakPriority(text) {
+  if (!('speechSynthesis' in window)) return;
+  
+  speechQueue = [];
+  window.speechSynthesis.cancel();
+  isSpeaking = false;
+  if (speechTimeout) clearTimeout(speechTimeout);
+
+  speechQueue.push(text);
+  processSpeechQueue();
 }
 
 function speak(text) {
@@ -102,7 +129,7 @@ function playBeepSound() {
   }
 }
 
-// --- WAKE LOCK (Impedir que a tela apague) ---
+// --- WAKE LOCK ---
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
@@ -204,7 +231,7 @@ function handleIntubacao() {
   state.isIntubated = true;
   document.getElementById('ritmoPill').innerText = 'Ventilação 1 a cada 6s';
   registerEvent('Intubação / Via Aérea Avançada');
-  speak("Paciente intubado. Transição para ventilação contínua: uma ventilação a cada 6 segundos com compressões ininterruptas.");
+  speak("Paciente intubado. Ventilação contínua a cada 6 segundos.");
 }
 
 // --- INTERVENÇÕES ---
@@ -242,34 +269,73 @@ function handleAmiodarona() {
   }
 }
 
+/// ============================================================
+// TEMPORIZADOR DE CHECAGEM DE PULSO (10s AHA) & REGRAS DE TEMPO
+// ============================================================
+let pulseCheckTimeout = null;
+
+// Corrigido: Atualização do timestamp da Amiodarona na 2ª dose
+function handleAmiodarona() {
+  if (state.amiodaronaCount === 0) {
+    state.amiodaronaCount = 1;
+    document.getElementById('countAmiodarona').innerText = 1;
+    registerEvent("Amiodarona (1ª dose - 300mg)");
+    speak("Amiodarona primeira dose de 300 miligramas administrada.");
+  } else if (state.amiodaronaCount === 1) {
+    state.amiodaronaCount = 2;
+    state.lastAmiodaronaTimestamp = state.totalSeconds; // Guarda o segundo exato para iniciar a regra dos 3 min
+    document.getElementById('countAmiodarona').innerText = 2;
+    registerEvent("Amiodarona (2ª dose - 150mg)");
+    speak("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
+    hideAlert();
+  } else {
+    alert("Dose máxima de Amiodarona (150mg) já administrada.");
+  }
+}
+
 // --- REGRAS DE TEMPO & ALERTAS POR VOZ ---
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
-  // 1. Alerta de 2 minutos (Checar pulso e ritmo)
+  // 1. Alerta de 2 minutos + Temporizador AHA de 10s para Checagem
   if (current > 0 && current % 120 === 0) {
     playBeepSound();
-    showAlert("⚠️ 2 MINUTOS: Checar ritmo e trocar socorrista!");
-    speak("Atenção: Dois minutos de manobras. Pausar para checar ritmo e trocar o socorrista.");
+    showAlert("⚠️ 2 MINUTOS: Checar ritmo e pulso (máx 10s) e trocar socorrista!");
+    speakPriority("Atenção: Dois minutos de manobras. Pausar para checar ritmo e pulso.");
+
+    // Cancela o timeout anterior se houver
+    if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout);
+
+    // Contagem regressiva de 10 segundos da AHA
+    pulseCheckTimeout = setTimeout(() => {
+      if (state.running) {
+        playBeepSound();
+        showAlert("⚡ RETORNAR ÀS COMPRESSÕES!");
+        speakPriority("Tempo limite de checagem atingido. Volte às compressões imediatamente e troque o socorrista.");
+      }
+    }, 10000); // 10 segundos cravados
+
+    return;
   }
 
-  // 2. Alerta de 3 Minutos para Adrenalina (pós 2ª Amiodarona ou ciclo normal)
+  // 2. Alerta de 3 Minutos para Adrenalina (pós 2ª Amiodarona)
   if (state.amiodaronaCount === 2 && state.lastAmiodaronaTimestamp) {
     const elapsedAmiodarona = current - state.lastAmiodaronaTimestamp;
     if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Aplicar Adrenalina (3 min pós 2ª Amiodarona)");
-      speak("Atenção: Três minutos após segunda dose de Amiodarona. Hora de aplicar Adrenalina.");
+      speakPriority("Atenção: Três minutos após segunda dose de Amiodarona. Hora de aplicar Adrenalina.");
       return;
     }
   }
 
+  // 3. Alerta de 3 Minutos para Adrenalina Contínua
   if (state.lastAdrenalinaTimestamp) {
     const elapsedAdrenalina = current - state.lastAdrenalinaTimestamp;
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (intervalo de 3 min)");
-      speak("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
+      speakPriority("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
     }
   }
 }
@@ -289,14 +355,15 @@ function handleRCE() {
   if (state.running) {
     state.running = false;
     clearInterval(state.timerInterval);
+    if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout); // Cancela aviso de voltar a comprimir se voltar a circulação
     registerEvent("RCE — Retorno da Circulação Espontânea (Cronômetro Pausado)");
-    speak("Retorno da circulação espontânea confirmado. Cronômetro pausado.");
+    speakPriority("Retorno da circulação espontânea confirmado. Cronômetro pausado.");
   }
 }
 
 function handleNovaPCR() {
   registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro");
-  speak("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
+  speakPriority("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
   state.totalSeconds = 0;
   document.getElementById('mainTimer').innerText = "00:00:00";
   
@@ -313,6 +380,7 @@ function handleNovaPCR() {
 function handleFinalizar() {
   state.running = false;
   clearInterval(state.timerInterval);
+  if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout);
   state.endTime = getFormattedClock();
 
   if (state.wakeLock) {
@@ -320,7 +388,7 @@ function handleFinalizar() {
   }
 
   registerEvent("Atendimento Finalizado");
-  speak("Atendimento finalizado. Gerando relatório.");
+  speakPriority("Atendimento finalizado. Gerando relatório.");
 
   document.getElementById('mainScreen').classList.add('hidden');
   document.getElementById('reportScreen').classList.remove('hidden');
