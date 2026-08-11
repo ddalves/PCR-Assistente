@@ -3,168 +3,121 @@ let state = {
   running: false,
   totalSeconds: 0,
   timerInterval: null,
-  beatActive: true,
   startTime: null,
   endTime: null,
   events: [],
-  choqueCount: 0,
+  choqueCount: 5,
   adrenalinaCount: 0,
   amiodaronaCount: 0,
   isIntubated: false,
-  equipamentoRitmo: 'NENHUM', // 'DEA' ou 'MONITOR'
   lastAdrenalinaTimestamp: null,
   lastAmiodaronaTimestamp: null,
   wakeLock: null
 };
 
-// --- MOTOR DE ÁUDIO DE ALTA PRECISÃO (WEB AUDIO SCHEDULER) ---
-let audioCtx = null;
-let nextNoteTime = 0.0;     // Quando o próximo bip deve tocar (em segundos do Web Audio)
-let timerID = null;         // Timer da thread de agendamento
-const tempo = 110.0;        // 110 BPM
-const lookahead = 25.0;     // Frequência de checagem do agendador (em ms)
-const scheduleAheadTime = 0.1; // Quanto tempo à frente agendar o áudio (em segundos)
+// ============================================================
+// MOTOR DE VOZ E ÁUDIO (FILA + MELHOR VOZ PT-BR)
+// ============================================================
+let selectedVoice = null;
+let speechQueue = [];
+let isSpeaking = false;
 
-// Desbloqueia o motor de áudio e a síntese de voz na interação do usuário
-function unlockAudioEngine() {
-  if (!audioCtx) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    audioCtx = new AudioContextClass();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.resume();
-  }
+function loadBestVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  const ptBR = voices.filter(v => v.lang && v.lang.toLowerCase() === 'pt-br');
+  const pt = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('pt'));
+  const available = ptBR.length ? ptBR : pt;
+
+  if (!available.length) return;
+
+  const preferred = available.find(v => {
+    const name = v.name.toLowerCase();
+    return (
+      v.localService &&
+      (name.includes('google') || name.includes('natural') || name.includes('neural') || name.includes('luciana') || name.includes('fernanda') || name.includes('daniel'))
+    );
+  });
+
+  selectedVoice = preferred || available.find(v => v.localService) || available[0];
 }
 
-// Agenda o bip seco e agudo (estilo metrônomo médico)
-function scheduleBeep(time) {
-  if (!state.running) return;
-
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = 'sine'; // Onda senoidal pura
-    osc.frequency.setValueAtTime(2200, time); // 2.200 Hz (Agudo/Alertante)
-
-    // Volume mais alto e ataque instantâneo (Sem reverberação)
-    gain.gain.setValueAtTime(0.7, time); // Volume aumentado (0.7)
-    
-    // Corte seco aos 100 ms (~0.1s) sem rabo de som
-    gain.gain.setValueAtTime(0.7, time + 0.09);
-    gain.gain.linearRampToValueAtTime(0.001, time + 0.1);
-
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(time);
-    osc.stop(time + 0.1); // Duração exata de 100ms
-  } catch (e) {
-    console.error("Erro no agendador de áudio:", e);
-  }
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = loadBestVoice;
+  loadBestVoice();
 }
 
-// Avança o tempo do próximo bip com base nos 110 BPM (60 / 110 = 0.5454...s)
-function nextNote() {
-  const secondsPerBeat = 60.0 / tempo;
-  nextNoteTime += secondsPerBeat;
+function processSpeechQueue() {
+  if (isSpeaking || !speechQueue.length || !('speechSynthesis' in window)) return;
+
+  const text = speechQueue.shift();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'pt-BR';
+  if (selectedVoice) utterance.voice = selectedVoice;
+
+  utterance.rate = 0.95;
+  utterance.pitch = 1.0;
+  utterance.volume = 1.0;
+
+  isSpeaking = true;
+
+  utterance.onend = () => {
+    isSpeaking = false;
+    setTimeout(processSpeechQueue, 80);
+  };
+
+  utterance.onerror = () => {
+    isSpeaking = false;
+    setTimeout(processSpeechQueue, 50);
+  };
+
+  window.speechSynthesis.speak(utterance);
 }
 
-// Loop contínuo que roda em background agendando os sons futuros
-function scheduler() {
-  while (nextNoteTime < audioCtx.currentTime + scheduleAheadTime) {
-    scheduleBeep(nextNoteTime);
-    nextNote();
-  }
-  timerID = setTimeout(scheduler, lookahead);
-}
-
-function startMetronome() {
-  unlockAudioEngine();
-  if (!state.running) return;
-
-  // Reseta a linha do tempo do agendador para o tempo atual do contexto
-  nextNoteTime = audioCtx.currentTime + 0.05;
-  scheduler();
-}
-
-function stopMetronome() {
-  if (timerID) {
-    clearTimeout(timerID);
-    timerID = null;
-  }
-}
-
-function toggleBeat() {
-  state.beatActive = !state.beatActive;
-  const btn = document.getElementById('btnToggleBeat');
-  if (btn) {
-    btn.innerText = state.beatActive ? "🎵 Bip On" : "🔇 Bip Off";
-  }
-
-  if (state.beatActive && state.running) {
-    startMetronome();
-  } else {
-    stopMetronome();
-  }
-}
-
-// Síntese Vocal Nativa (Não interfere no AudioContext do Metrônomo)
 function speak(text) {
-  unlockAudioEngine();
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 1.0;
-    utterance.volume = 1.0;
-    window.speechSynthesis.speak(utterance);
-  }
+  if (!text || !('speechSynthesis' in window)) return;
+  speechQueue.push(text);
+  processSpeechQueue();
 }
 
-// Alerta Sonoro Duplo para Intervalos Clínicos (2 min, Adrenalina, etc)
 function playBeepSound() {
   try {
-    unlockAudioEngine();
-    const now = audioCtx.currentTime;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.setValueAtTime(900, now + 0.15);
-
-    gain.gain.setValueAtTime(0.5, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
 
     osc.connect(gain);
     gain.connect(audioCtx.destination);
 
-    osc.start(now);
-    osc.stop(now + 0.4);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.6);
   } catch (e) {
-    console.log("Erro no sinal de alerta:", e);
+    console.log("Áudio Context não suportado");
   }
 }
 
+// --- WAKE LOCK (Impedir que a tela apague) ---
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       state.wakeLock = await navigator.wakeLock.request('screen');
     }
   } catch (err) {
-    console.log("Wake Lock indisponível:", err);
+    console.log("Wake Lock não ativado:", err);
   }
 }
 
+// Relógio Barra Superior
 function startWallClock() {
   setInterval(() => {
     const now = new Date();
-    const clockEl = document.getElementById('wallClock');
-    if (clockEl) clockEl.innerText = now.toTimeString().substring(0, 8);
+    document.getElementById('wallClock').innerText = now.toTimeString().substring(0, 8);
   }, 1000);
 }
 startWallClock();
@@ -181,10 +134,8 @@ function getFormattedClock() {
   return now.toTimeString().substring(0, 5);
 }
 
-// --- FLUXO DA APLICAÇÃO ---
-
+// Tela 1
 function selecionarPerfil(element, perfil) {
-  unlockAudioEngine(); // Garante o destravamento já na seleção
   state.profile = perfil;
   document.querySelectorAll('.card-perfil').forEach(card => card.classList.remove('selecionado'));
   element.classList.add('selecionado');
@@ -196,24 +147,20 @@ function selecionarPerfil(element, perfil) {
 
 function iniciarPCR() {
   if (!state.profile) return;
-  unlockAudioEngine(); // Confirma ativação de áudio na transição de tela
-
   document.getElementById('tela-setup').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
-
+  
   requestWakeLock();
   startSession();
 }
 
+// Sessão e Timer Principal
 function startSession() {
   if (state.running) return;
   state.running = true;
   if (!state.startTime) state.startTime = getFormattedClock();
 
   registerEvent(`Início de PCR (${state.profile})`);
-  
-  // Dispara o agendador de alta precisão e a voz
-  startMetronome();
   speak(`Início de atendimento. Perfil ${state.profile}. Iniciar compressões.`);
 
   state.timerInterval = setInterval(() => {
@@ -239,26 +186,12 @@ function registerEvent(description) {
 
 function renderLiveLog(item) {
   const list = document.getElementById('liveLogList');
-  if (!list) return;
   const li = document.createElement('li');
   li.innerText = `• ${item.clock} - ${item.label} (${item.elapsed})`;
   list.insertBefore(li, list.firstChild);
 }
 
-// --- BOTÕES DE AÇÃO E REGISTRO DE EVENTOS ---
-
-function handleDEA() {
-  state.equipamentoRitmo = 'DEA';
-  registerEvent('DEA instalado / analisando');
-  speak("D E A instalado. Siga as instruções do aparelho.");
-}
-
-function handleMonitor() {
-  state.equipamentoRitmo = 'MONITOR';
-  registerEvent('Monitor cardíaco instalado');
-  speak("Monitor cardíaco instalado.");
-}
-
+// --- AÇÕES DO SUPORTE ---
 function handleVentilacao() {
   registerEvent('Ventilação com bolsa-válvula-máscara');
   if (!state.isIntubated) {
@@ -271,9 +204,10 @@ function handleIntubacao() {
   state.isIntubated = true;
   document.getElementById('ritmoPill').innerText = 'Ventilação 1 a cada 6s';
   registerEvent('Intubação / Via Aérea Avançada');
-  speak("Paciente intubado. Transição para ventilação contínua: uma ventilação a cada 6 segundos e compressões ininterruptas.");
+  speak("Paciente intubado. Transição para ventilação contínua: uma ventilação a cada 6 segundos com compressões ininterruptas.");
 }
 
+// --- INTERVENÇÕES ---
 function handleChoque() {
   state.choqueCount++;
   document.getElementById('countChoque').innerText = state.choqueCount;
@@ -301,43 +235,31 @@ function handleAmiodarona() {
     state.lastAmiodaronaTimestamp = state.totalSeconds;
     document.getElementById('countAmiodarona').innerText = 2;
     registerEvent("Amiodarona (2ª dose - 150mg)");
-    speak("Amiodarona segunda dose de 150 miligramas administrada. Retornar ao ciclo de Adrenalina.");
+    speak("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
     hideAlert();
   } else {
     alert("Dose máxima de Amiodarona (150mg) já administrada.");
   }
 }
 
-// --- CHECAGEM CONTINUA DE REGRAS ---
-
+// --- REGRAS DE TEMPO & ALERTAS POR VOZ ---
 function checkIntervalRules() {
   const current = state.totalSeconds;
 
-  // 1. Alerta de 2 Minutos (Diferenciação DEA vs Monitor)
+  // 1. Alerta de 2 minutos (Checar pulso e ritmo)
   if (current > 0 && current % 120 === 0) {
     playBeepSound();
-    
-    if (state.equipamentoRitmo === 'DEA') {
-      showAlert("⚠️ 2 MINUTOS: Pausar manobras e seguir orientações do DEA!");
-      speak("Atenção: Dois minutos. Pausar manobras, trocar socorrista e seguir as orientações do D E A.");
-    } else {
-      showAlert("⚠️ 2 MINUTOS: Pausar, checar ritmo, pulso e trocar socorrista!");
-      speak("Atenção: Dois minutos. Pausar manobras, checar ritmo e pulso, e trocar o socorrista.");
-    }
+    showAlert("⚠️ 2 MINUTOS: Checar ritmo e trocar socorrista!");
+    speak("Atenção: Dois minutos de manobras. Pausar para checar ritmo e trocar o socorrista.");
   }
 
-  // 2. Alerta de Ventilação a cada 6s quando intubado
-  if (state.isIntubated && current > 0 && current % 6 === 0) {
-    speak("Ventilar.");
-  }
-
-  // 3. Regra de Adrenalina (a cada 3 minutos)
+  // 2. Alerta de 3 Minutos para Adrenalina (pós 2ª Amiodarona ou ciclo normal)
   if (state.amiodaronaCount === 2 && state.lastAmiodaronaTimestamp) {
     const elapsedAmiodarona = current - state.lastAmiodaronaTimestamp;
     if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Aplicar Adrenalina (3 min pós 2ª Amiodarona)");
-      speak("Atenção: Três minutos após segunda dose de Amiodarona. Aplicar Adrenalina.");
+      speak("Atenção: Três minutos após segunda dose de Amiodarona. Hora de aplicar Adrenalina.");
       return;
     }
   }
@@ -346,7 +268,7 @@ function checkIntervalRules() {
     const elapsedAdrenalina = current - state.lastAdrenalinaTimestamp;
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
       playBeepSound();
-      showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (3 min)");
+      showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (intervalo de 3 min)");
       speak("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
     }
   }
@@ -354,38 +276,32 @@ function checkIntervalRules() {
 
 function showAlert(msg) {
   const alertBox = document.getElementById('medAlertBox');
-  if (alertBox) {
-    document.getElementById('alertMessage').innerText = msg;
-    alertBox.classList.remove('hidden');
-  }
+  document.getElementById('alertMessage').innerText = msg;
+  alertBox.classList.remove('hidden');
 }
 
 function hideAlert() {
-  const alertBox = document.getElementById('medAlertBox');
-  if (alertBox) alertBox.classList.add('hidden');
+  document.getElementById('medAlertBox').classList.add('hidden');
 }
 
-// --- FINALIZAÇÃO E REINÍCIO ---
-
+// --- RESULTADOS ---
 function handleRCE() {
   if (state.running) {
     state.running = false;
     clearInterval(state.timerInterval);
-    stopMetronome();
     registerEvent("RCE — Retorno da Circulação Espontânea (Cronômetro Pausado)");
-    speak("Retorno da circulação espontânea confirmado. Cronômetro pausado. Iniciar cuidados pós-parada.");
+    speak("Retorno da circulação espontânea confirmado. Cronômetro pausado.");
   }
 }
 
 function handleNovaPCR() {
   registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro");
-  speak("Nova parada cardiorrespiratória. Reiniciando cronômetro e compressões.");
+  speak("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
   state.totalSeconds = 0;
   document.getElementById('mainTimer').innerText = "00:00:00";
-
+  
   if (!state.running) {
     state.running = true;
-    startMetronome();
     state.timerInterval = setInterval(() => {
       state.totalSeconds++;
       document.getElementById('mainTimer').innerText = formatHHMMSS(state.totalSeconds);
@@ -397,7 +313,6 @@ function handleNovaPCR() {
 function handleFinalizar() {
   state.running = false;
   clearInterval(state.timerInterval);
-  stopMetronome();
   state.endTime = getFormattedClock();
 
   if (state.wakeLock) {
@@ -413,6 +328,7 @@ function handleFinalizar() {
   renderReport();
 }
 
+// Tela 3 - Relatório
 function renderReport() {
   document.getElementById('reportProfileDisplay').innerText = state.profile;
   document.getElementById('startTimeDisplay').innerText = state.startTime;
