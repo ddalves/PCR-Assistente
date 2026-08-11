@@ -6,7 +6,7 @@ let state = {
   startTime: null,
   endTime: null,
   events: [],
-  choqueCount: 5,
+  choqueCount: 0, // CORRIGIDO: Começa em 0
   adrenalinaCount: 0,
   amiodaronaCount: 0,
   isIntubated: false,
@@ -15,8 +15,21 @@ let state = {
   wakeLock: null
 };
 
+let audioCtx = null;
+let pulseCheckTimeout = null;
+
+// Inicializa o AudioContext com toque humano para não ser bloqueado pelo navegador
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
 // ============================================================
-// MOTOR DE VOZ E ÁUDIO (COM DESTRAVAMENTO ANTI-BUG)
+// MOTOR DE VOZ E ÁUDIO
 // ============================================================
 let selectedVoice = null;
 let speechQueue = [];
@@ -68,7 +81,6 @@ function processSpeechQueue() {
 
   // Trava de segurança: Se o motor de voz travar por +5s, força a liberação
   speechTimeout = setTimeout(() => {
-    console.warn("Voz travada detectada. Forçando reset.");
     window.speechSynthesis.cancel();
     isSpeaking = false;
     processSpeechQueue();
@@ -80,8 +92,7 @@ function processSpeechQueue() {
     setTimeout(processSpeechQueue, 100);
   };
 
-  utterance.onerror = (e) => {
-    console.error("Erro na síntese de voz:", e);
+  utterance.onerror = () => {
     clearTimeout(speechTimeout);
     isSpeaking = false;
     setTimeout(processSpeechQueue, 100);
@@ -90,7 +101,7 @@ function processSpeechQueue() {
   window.speechSynthesis.speak(utterance);
 }
 
-// Cancela áudios pendentes para dar prioridade imediata aos alertas vitais
+// Interrompe e limpa a fila APENAS para emergências reais (evita cortar a própria frase)
 function speakPriority(text) {
   if (!('speechSynthesis' in window)) return;
   
@@ -109,9 +120,10 @@ function speak(text) {
   processSpeechQueue();
 }
 
+// Bip sonoro corrigido (desbloqueado pelo clique do usuário)
 function playBeepSound() {
   try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    initAudio();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
@@ -125,7 +137,7 @@ function playBeepSound() {
     osc.start();
     osc.stop(audioCtx.currentTime + 0.6);
   } catch (e) {
-    console.log("Áudio Context não suportado");
+    console.log("Erro ao tocar áudio", e);
   }
 }
 
@@ -163,6 +175,7 @@ function getFormattedClock() {
 
 // Tela 1
 function selecionarPerfil(element, perfil) {
+  initAudio(); // Ativa permissão de som no clique
   state.profile = perfil;
   document.querySelectorAll('.card-perfil').forEach(card => card.classList.remove('selecionado'));
   element.classList.add('selecionado');
@@ -174,6 +187,7 @@ function selecionarPerfil(element, perfil) {
 
 function iniciarPCR() {
   if (!state.profile) return;
+  initAudio();
   document.getElementById('tela-setup').classList.add('hidden');
   document.getElementById('mainScreen').classList.remove('hidden');
   
@@ -220,22 +234,27 @@ function renderLiveLog(item) {
 
 // --- AÇÕES DO SUPORTE ---
 function handleVentilacao() {
+  initAudio();
   registerEvent('Ventilação com bolsa-válvula-máscara');
   if (!state.isIntubated) {
-    const ratio = state.profile === 'ADULTO' ? '30 para 2' : '15 para 2';
+    const ratio = state.profile === 'PEDIÁTRICO' ? '15 para 2' : '30 para 2';
     speak(`Ventilação com máscara. Mantendo relação de ${ratio}.`);
+  } else {
+    speak("Ventilação em via aérea avançada. Uma ventilação a cada 6 segundos.");
   }
 }
 
 function handleIntubacao() {
+  initAudio();
   state.isIntubated = true;
   document.getElementById('ritmoPill').innerText = 'Ventilação 1 a cada 6s';
   registerEvent('Intubação / Via Aérea Avançada');
-  speak("Paciente intubado. Ventilação contínua a cada 6 segundos.");
+  speak("Paciente intubado. Transição para ventilação contínua de uma a cada 6 segundos.");
 }
 
 // --- INTERVENÇÕES ---
 function handleChoque() {
+  initAudio();
   state.choqueCount++;
   document.getElementById('countChoque').innerText = state.choqueCount;
   registerEvent(`Choque aplicado (${state.choqueCount}º)`);
@@ -243,6 +262,7 @@ function handleChoque() {
 }
 
 function handleAdrenalina() {
+  initAudio();
   state.adrenalinaCount++;
   state.lastAdrenalinaTimestamp = state.totalSeconds;
   document.getElementById('countAdrenalina').innerText = state.adrenalinaCount;
@@ -252,6 +272,7 @@ function handleAdrenalina() {
 }
 
 function handleAmiodarona() {
+  initAudio();
   if (state.amiodaronaCount === 0) {
     state.amiodaronaCount = 1;
     document.getElementById('countAmiodarona').innerText = 1;
@@ -260,30 +281,6 @@ function handleAmiodarona() {
   } else if (state.amiodaronaCount === 1) {
     state.amiodaronaCount = 2;
     state.lastAmiodaronaTimestamp = state.totalSeconds;
-    document.getElementById('countAmiodarona').innerText = 2;
-    registerEvent("Amiodarona (2ª dose - 150mg)");
-    speak("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
-    hideAlert();
-  } else {
-    alert("Dose máxima de Amiodarona (150mg) já administrada.");
-  }
-}
-
-/// ============================================================
-// TEMPORIZADOR DE CHECAGEM DE PULSO (10s AHA) & REGRAS DE TEMPO
-// ============================================================
-let pulseCheckTimeout = null;
-
-// Corrigido: Atualização do timestamp da Amiodarona na 2ª dose
-function handleAmiodarona() {
-  if (state.amiodaronaCount === 0) {
-    state.amiodaronaCount = 1;
-    document.getElementById('countAmiodarona').innerText = 1;
-    registerEvent("Amiodarona (1ª dose - 300mg)");
-    speak("Amiodarona primeira dose de 300 miligramas administrada.");
-  } else if (state.amiodaronaCount === 1) {
-    state.amiodaronaCount = 2;
-    state.lastAmiodaronaTimestamp = state.totalSeconds; // Guarda o segundo exato para iniciar a regra dos 3 min
     document.getElementById('countAmiodarona').innerText = 2;
     registerEvent("Amiodarona (2ª dose - 150mg)");
     speak("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
@@ -303,17 +300,16 @@ function checkIntervalRules() {
     showAlert("⚠️ 2 MINUTOS: Checar ritmo e pulso (máx 10s) e trocar socorrista!");
     speakPriority("Atenção: Dois minutos de manobras. Pausar para checar ritmo e pulso.");
 
-    // Cancela o timeout anterior se houver
     if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout);
 
-    // Contagem regressiva de 10 segundos da AHA
+    // Usa a fila comum (speak) após 10s para NÃO cortar a fala anterior caso ela ainda esteja terminando
     pulseCheckTimeout = setTimeout(() => {
       if (state.running) {
         playBeepSound();
         showAlert("⚡ RETORNAR ÀS COMPRESSÕES!");
-        speakPriority("Tempo limite de checagem atingido. Volte às compressões imediatamente e troque o socorrista.");
+        speak("Tempo limite atingido. Volte às compressões imediatamente.");
       }
-    }, 10000); // 10 segundos cravados
+    }, 10000);
 
     return;
   }
@@ -324,7 +320,7 @@ function checkIntervalRules() {
     if (elapsedAmiodarona > 0 && elapsedAmiodarona % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Aplicar Adrenalina (3 min pós 2ª Amiodarona)");
-      speakPriority("Atenção: Três minutos após segunda dose de Amiodarona. Hora de aplicar Adrenalina.");
+      speak("Atenção: Três minutos após segunda dose de Amiodarona. Aplicar Adrenalina.");
       return;
     }
   }
@@ -335,7 +331,7 @@ function checkIntervalRules() {
     if (elapsedAdrenalina > 0 && elapsedAdrenalina % 180 === 0) {
       playBeepSound();
       showAlert("🔔 ALERTA: Avaliar/Aplicar Adrenalina (intervalo de 3 min)");
-      speakPriority("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
+      speak("Atenção: Três minutos desde a última Adrenalina. Avaliar nova dose.");
     }
   }
 }
@@ -355,7 +351,7 @@ function handleRCE() {
   if (state.running) {
     state.running = false;
     clearInterval(state.timerInterval);
-    if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout); // Cancela aviso de voltar a comprimir se voltar a circulação
+    if (pulseCheckTimeout) clearTimeout(pulseCheckTimeout);
     registerEvent("RCE — Retorno da Circulação Espontânea (Cronômetro Pausado)");
     speakPriority("Retorno da circulação espontânea confirmado. Cronômetro pausado.");
   }
