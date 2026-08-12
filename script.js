@@ -446,14 +446,14 @@ function handleAmiodarona() {
       state.amiodarona2ndReminderFired = false;
       const countAmio = document.getElementById('countAmiodarona');
       if (countAmio) countAmio.innerText = 1;
-      registerEvent("Amiodarona (1ª dose - 300mg)");
+      registerEvent("Amiodarona");
       speakPriority("Amiodarona primeira dose administrada.");
     } else if (state.amiodaronaCount === 1) {
       state.amiodaronaCount = 2;
       state.lastAmiodaronaTimestamp = state.totalSeconds;
       const countAmio = document.getElementById('countAmiodarona');
       if (countAmio) countAmio.innerText = 2;
-      registerEvent("Amiodarona (2ª dose - 150mg)");
+      registerEvent("Amiodarona");
       speakPriority("Amiodarona segunda dose administrada. Atenção: Retornar ao ciclo de Adrenalina.");
       hideAlert();
     } else {
