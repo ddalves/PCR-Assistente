@@ -447,14 +447,14 @@ function handleAmiodarona() {
       const countAmio = document.getElementById('countAmiodarona');
       if (countAmio) countAmio.innerText = 1;
       registerEvent("Amiodarona (1ª dose - 300mg)");
-      speakPriority("Amiodarona primeira dose de 300 miligramas administrada.");
+      speakPriority("Amiodarona primeira dose administrada.");
     } else if (state.amiodaronaCount === 1) {
       state.amiodaronaCount = 2;
       state.lastAmiodaronaTimestamp = state.totalSeconds;
       const countAmio = document.getElementById('countAmiodarona');
       if (countAmio) countAmio.innerText = 2;
       registerEvent("Amiodarona (2ª dose - 150mg)");
-      speakPriority("Amiodarona segunda dose de 150 miligramas administrada. Atenção: Retornar ao ciclo de Adrenalina.");
+      speakPriority("Amiodarona segunda dose administrada. Atenção: Retornar ao ciclo de Adrenalina.");
       hideAlert();
     } else {
       alert("Dose máxima de Amiodarona (150mg) já administrada.");
@@ -502,8 +502,8 @@ function checkIntervalRules() {
     if (elapsedAmio >= 180) {
       state.amiodarona2ndReminderFired = true;
       playSingleAlertTone();
-      showAlert("💊 3 MIN: Considerar 2ª dose de Amiodarona (150mg)");
-      speak("Atenção: três minutos desde a primeira dose de Amiodarona. Considere a segunda dose de 150 miligramas.");
+      showAlert("💊 3 MIN: Considerar 2ª dose de Amiodarona");
+      speak("Atenção: três minutos desde a primeira dose de Amiodarona. Considere a segunda dose.");
     }
   }
 
@@ -554,6 +554,14 @@ function handleNovaPCR() {
     registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro");
     speakPriority("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
     state.totalSeconds = 0;
+
+    // Reinicia os "relógios" de lembrete de medicação junto com o cronômetro.
+    
+    state.lastAdrenalinaTimestamp = null;
+    state.lastAmiodaronaTimestamp = null;
+    state.amiodaronaFirstDoseTimestamp = null;
+    state.amiodarona2ndReminderFired = false;
+
     const timerEl = document.getElementById('mainTimer');
     if (timerEl) timerEl.innerText = "00:00:00";
 
