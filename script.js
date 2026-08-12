@@ -551,29 +551,44 @@ function handleRCE() {
 
 function handleNovaPCR() {
   guarded('novapcr', () => {
-    registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro");
-    speakPriority("Nova parada cardiorrespiratória. Reiniciando cronômetro.");
+    initAudio();
+    registerEvent("Nova Parada Cardiorrespiratória — Reiniciando Cronômetro e Ciclos de Tempo");
+    speakPriority("Nova parada cardiorrespiratória. Reiniciando cronômetro e ciclos de tempo.");
+
+    // 1. Para temporizadores ativos para evitar múltiplos intervalos rodando em paralelo
+    if (state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+    if (pulseCheckTimeout) {
+      clearTimeout(pulseCheckTimeout);
+      pulseCheckTimeout = null;
+    }
+
+    // 2. Reseta o cronômetro do ciclo atual para zero
     state.totalSeconds = 0;
 
-    // Reinicia os "relógios" de lembrete de medicação junto com o cronômetro.
-    
+    // 3. Reseta APENAS os relógios/timestamps dos lembretes (PRESERVA os contadores totais)
     state.lastAdrenalinaTimestamp = null;
     state.lastAmiodaronaTimestamp = null;
     state.amiodaronaFirstDoseTimestamp = null;
     state.amiodarona2ndReminderFired = false;
 
+    // 4. Atualiza o relógio principal na tela
     const timerEl = document.getElementById('mainTimer');
     if (timerEl) timerEl.innerText = "00:00:00";
 
-    if (!state.running) {
-      state.running = true;
-      state.timerInterval = setInterval(() => {
-        state.totalSeconds++;
-        if (timerEl) timerEl.innerText = formatHHMMSS(state.totalSeconds);
-        checkIntervalRules();
-      }, 1000);
-    }
-    startCompressionMetronome();
+    // 5. Reinicia a contagem de tempo (ciclo de 2 minutos recomeça do zero)
+    state.running = true;
+    state.timerInterval = setInterval(() => {
+      state.totalSeconds++;
+      if (timerEl) timerEl.innerText = formatHHMMSS(state.totalSeconds);
+      checkIntervalRules();
+    }, 1000);
+
+    // 6. Limpa alertas na tela e retoma o metrônomo
+    hideAlert();
+    resumeCompressionMetronome();
   });
 }
 
