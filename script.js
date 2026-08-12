@@ -457,7 +457,7 @@ function handleAmiodarona() {
       speakPriority("Amiodarona segunda dose administrada. Atenção: Retornar ao ciclo de Adrenalina.");
       hideAlert();
     } else {
-      alert("Dose máxima de Amiodarona (150mg) já administrada.");
+      alert("Dose máxima de Amiodarona já administrada.");
     }
   });
 }
