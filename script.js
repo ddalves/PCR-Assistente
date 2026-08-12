@@ -383,6 +383,33 @@ function handleIntubacao() {
 }
 
 // ============================================================
+// DISPOSITIVOS — DEA E MONITOR
+// ============================================================
+// DEA: o aparelho analisa ritmo sozinho e fala suas próprias instruções.
+// O app NÃO tenta acompanhar isso — só avisa pra você prestar atenção
+// no que o DEA está dizendo, e continua pedindo checagem de pulso
+// (que o DEA não faz) a cada 2 minutos.
+function handleDEA() {
+  guarded('dea', () => {
+    initAudio();
+    state.deviceMode = 'DEA';
+    registerEvent('DEA instalado / em uso');
+    speakPriority("DEA instalado. Preste atenção às orientações do aparelho.");
+  });
+}
+
+// Monitor/desfibrilador manual: ritmo fica visível continuamente na tela
+// do aparelho, então checar ritmo e pulso volta a ser seguro e direto.
+function handleMonitor() {
+  guarded('monitor', () => {
+    initAudio();
+    state.deviceMode = 'MONITOR';
+    registerEvent('Monitor / Desfibrilador manual conectado');
+    speakPriority("Monitor conectado. Ritmo visível continuamente no aparelho.");
+  });
+}
+
+// ============================================================
 // INTERVENÇÕES
 // ============================================================
 function handleChoque() {
