@@ -432,7 +432,7 @@ function handleAdrenalina() {
     const countAdrenalina = document.getElementById('countAdrenalina');
     if (countAdrenalina) countAdrenalina.innerText = state.adrenalinaCount;
     registerEvent(`Adrenalina (${state.adrenalinaCount}ª dose)`);
-    speakPriority(`Adrenalina ${state.adrenalinaCount}ª dose administrada.`);
+    speakPriority("Adrenalina administrada.");
     hideAlert();
   });
 }
@@ -474,8 +474,8 @@ function checkIntervalRules() {
     startAlertBeepLoop();
 
     if (state.deviceMode === 'DEA') {
-      showAlert("⚠️ 2 MINUTOS: Atenção aos comandos de voz do DEA e troque o socorrista!");
-      speakPriority("Atenção: Dois minutos. Pause e preste atenção nos comandos do DEA. Trocar socorrista.");
+      showAlert("⚠️ 2 MINUTOS: Atenção aos comandos do DEA e troque o socorrista!");
+      speakPriority("Atenção: Dois minutos. Atenção nos comandos do DEA. Trocar socorrista.");
     } else if (state.deviceMode === 'MONITOR') {
       showAlert("⚠️ 2 MINUTOS: Avaliar ritmo no monitor, checar pulso (máx 10s) e trocar socorrista!");
       speakPriority("Atenção: Dois minutos. Checar ritmo no monitor e pulso central. Trocar socorrista.");
